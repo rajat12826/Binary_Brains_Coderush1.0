@@ -9,7 +9,113 @@ import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
+// Add this email utility function at the top of your file, after imports
+async function sendNotificationEmail(data) {
+  try {
+    console.log("=== EMAIL SENDING ATTEMPT ===");
+    console.log("Email credentials check:");
+    console.log("MAIL_USER:", process.env.MAIL_USER || "NOT SET");
+    console.log("MAIL_PASS:", process.env.MAIL_PASS ? `SET (${process.env.MAIL_PASS.length} chars)` : "NOT SET");
+    
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      console.error("❌ Email credentials missing in environment variables");
+      return { success: false, error: "Email credentials missing" };
+    }
 
+    // Create transporter with enhanced logging
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+      debug: true,
+      logger: true,
+      // Add timeout and connection options
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000
+    });
+
+    // Verify the transporter configuration
+    console.log("🔍 Verifying email transporter...");
+    await transporter.verify();
+    console.log("✅ Email transporter verified successfully");
+
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: 'pariharrajat078@gmail.com',
+      subject: `Document Analysis: ${data.title}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">📊 Document Analysis ${data.isNew ? 'Complete' : 'Retrieved'}</h2>
+          
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <p><strong>📄 Document:</strong> ${data.title}</p>
+            <p><strong>👤 User ID:</strong> ${data.userId}</p>
+            <p><strong>⏰ ${data.isNew ? 'Processed' : 'Retrieved'} At:</strong> ${new Date().toISOString()}</p>
+            ${data.fileUrl ? `<p><strong>🔗 File URL:</strong> <a href="${data.fileUrl}">View Document</a></p>` : ''}
+          </div>
+
+          <div style="background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <h3 style="margin-top: 0; color: #2563eb;">🤖 AI Analysis Results</h3>
+            <ul style="margin: 10px 0;">
+              <li><strong>AI Probability:</strong> ${Math.round(data.aiProbability * 100)}%</li>
+              <li><strong>Risk Level:</strong> ${data.riskLevel}</li>
+              <li><strong>Verdict:</strong> ${data.verdict}</li>
+              <li><strong>Confidence:</strong> ${Math.round(data.confidence * 100)}%</li>
+              ${data.processingTime ? `<li><strong>Processing Time:</strong> ${Math.round(data.processingTime/1000)}s</li>` : ''}
+            </ul>
+          </div>
+
+          ${data.geminiReasoning ? `
+          <div style="background: #f0fdf4; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <h3 style="margin-top: 0; color: #16a34a;">🧠 Gemini AI Insights</h3>
+            <p style="font-style: italic;">"${data.geminiReasoning}"</p>
+          </div>
+          ` : ''}
+
+          <hr style="margin: 20px 0;">
+          <p style="color: #666; font-size: 12px;">
+            This is an automated notification from Document Integrity Analyzer
+          </p>
+        </div>
+      `,
+      text: `Document Analysis ${data.isNew ? 'Complete' : 'Retrieved'}: ${data.title} by ${data.userId}. AI Probability: ${Math.round(data.aiProbability * 100)}%. Risk: ${data.riskLevel}. ${data.fileUrl ? `File: ${data.fileUrl}` : ''}`
+    };
+
+    console.log("📧 Sending email notification...");
+    console.log("Mail options:", {
+      from: mailOptions.from,
+      to: mailOptions.to,
+      subject: mailOptions.subject
+    });
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully!");
+    console.log("Message ID:", info.messageId);
+    console.log("Response:", info.response);
+    
+    return { success: true, messageId: info.messageId };
+    
+  } catch (emailError) {
+    console.error("❌ Email sending failed:");
+    console.error("Error message:", emailError.message);
+    console.error("Error code:", emailError.code);
+    console.error("Full error:", emailError);
+    
+    // Log specific error types
+    if (emailError.code === 'EAUTH') {
+      console.error("🔑 Authentication failed. Check your email and app password.");
+    } else if (emailError.code === 'ESOCKET') {
+      console.error("🌐 Network connection failed. Check internet connection.");
+    } else if (emailError.code === 'ETIMEDOUT') {
+      console.error("⏰ Connection timed out. Try again later.");
+    }
+    
+    return { success: false, error: emailError.message };
+  }
+}
 /**
  * Core Analysis Engine
  */
@@ -676,14 +782,13 @@ export async function handleSubmissionImmediate(req, res) {
     };
 
     // Upload to cloudinary (for permanent storage)
-    let fileUrl = null;
+   let fileUrl = null;
     try {
       const uploadResult = await new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             resource_type: "raw",
             folder: "submissions",
-            // public_id: `doc_${Date.now()}_${req.file.originalname || 'document'}`,
             public_id: `doc_${Date.now()}`,
             access_mode: "public"
           },
@@ -697,30 +802,58 @@ export async function handleSubmissionImmediate(req, res) {
       fileUrl = uploadResult.secure_url;
       console.log("File uploaded to Cloudinary:", fileUrl);
 
-      const transporter = nodemailer.createTransport({
-  service: "gmail", // Or use "smtp.yourmail.com"
-  auth: {
-    user: process.env.MAIL_USER, // your email
-    pass: process.env.MAIL_PASS, // your app password
-  },
-});
-      const mailOptions = {
-        from: process.env.MAIL_USER,
-        to:process.env.MAIL_USER ,
-        subject: "File uploaded to Cloudinary",
-        text: `File uploaded to Cloudinary: ${fileUrl}`,
+      // SEND EMAIL FOR NEW SUBMISSIONS
+      console.log("📤 Processing new submission - sending email notification...");
+      
+      const emailData = {
+        title,
+        userId,
+        aiProbability: finalAiProbability,
+        confidence: finalConfidence,
+        riskLevel: overallRisk,
+        verdict: finalAiProbability > 0.8 ? "AI_GENERATED" : 
+                finalAiProbability > 0.5 ? "LIKELY_AI" : 
+                finalAiProbability > 0.3 ? "SUSPICIOUS" : "HUMAN_WRITTEN",
+        geminiReasoning: detailedReasoning,
+        fileUrl,
+        isNew: true,
+        processingTime: Date.now() - startTime
       };
 
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.error("Error sending email:", error);
+      // Send email notification (don't block response if email fails)
+      sendNotificationEmail(emailData).then(result => {
+        if (result.success) {
+          console.log("📧 Email notification sent for new submission");
         } else {
-          console.log("Email sent:", info.response);
+          console.log("📧 Email notification failed for new submission:", result.error);
         }
+      }).catch(err => {
+        console.log("📧 Email notification error for new submission:", err.message);
       });
+
     } catch (uploadError) {
       console.warn("File upload to Cloudinary failed:", uploadError.message);
-      // Continue processing even if Cloudinary upload fails
+      
+      // Still send email even if upload fails
+      console.log("📤 Sending email notification despite upload failure...");
+      const emailData = {
+        title,
+        userId,
+        aiProbability: finalAiProbability,
+        confidence: finalConfidence,
+        riskLevel: overallRisk,
+        verdict: finalAiProbability > 0.8 ? "AI_GENERATED" : 
+                finalAiProbability > 0.5 ? "LIKELY_AI" : 
+                finalAiProbability > 0.3 ? "SUSPICIOUS" : "HUMAN_WRITTEN",
+        geminiReasoning: detailedReasoning,
+        fileUrl: null,
+        isNew: true,
+        processingTime: Date.now() - startTime
+      };
+
+      sendNotificationEmail(emailData).catch(err => {
+        console.log("📧 Email notification error:", err.message);
+      });
     }
 
     // Save to database with proper userId handling
