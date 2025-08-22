@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from "@clerk/clerk-react";
 import axios from "axios";
+import SubmissionsPage from './SubmissionsPage';
 
 import {
   Bell,
@@ -118,30 +119,58 @@ const navigationItems = {
 // Dashboard Statistics Component
 const DashboardStats = ({ userRole }) => {
 
-  const { user } = useUser();
-  const authorId = user?.id; 
+  // const { user } = useUser();
+  // const authorId = user?.id; 
+
+  // const [total, setTotal] = useState(0);
+
+   const { isLoaded, isSignedIn, user } = useUser();
+
+  const userId = user?.id
+  console.log(userId);
 
   const [total, setTotal] = useState(0);
-
+  const [aitotal, setAitotal] = useState(0);
+const [ptotal, setPtotal] = useState(0);
    useEffect(() => {
-    console.log(user);
+    console.log(userId);
     async function fetchTotal() {
       try {
-        const res = await axios.get(`/api/submissions/total/${authorId}`);
+        const res = await axios.get(`http://localhost:8000/api/submissions/total/${userId}`);
+        const res1 = await axios.get(`http://localhost:8000/api/submissions/aitotal/${userId}`);
+        const res2 = await axios.get(`http://localhost:8000/api/submissions/ptotal/${userId}`);
+        console.log(res.data.total);
         setTotal(res.data.total);
+        setAitotal(res1.data.aitotal);
+        setPtotal(res2.data.ptotal);
       } catch (err) {
         console.error(err);
       }
     }
 
-    if (authorId) fetchTotal();
-  }, [authorId]);
+    if (userId) fetchTotal();
+  }, [userId]);
+
+  const [cleanPapers, setCleanPapers] = useState(0);
+
+useEffect(() => {
+    async function fetchCleanCount() {
+      try {
+        const res = await axios.get(`http://localhost:8000/api/submissions/clean/${userId}`);
+        setCleanPapers(res.data.cleanCount);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (userId) fetchCleanCount();
+  }, [userId]);
 
   const adminStats = [
-    { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
-    { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
+    { label: 'Total Submissions', value: total, icon: FileText, color: 'blue' },
+    { label: 'AI Detected', value: aitotal, icon: Brain, color: 'red' },
+    { label: 'Plagiarism Cases', value: ptotal, icon: Shield, color: 'orange' },
+    { label: 'Clean Papers', value: cleanPapers, icon: CheckCircle, color: 'green' }
   ];
 
   const reviewerStats = [
@@ -152,7 +181,7 @@ const DashboardStats = ({ userRole }) => {
   ];
 
   const authorStats = [
-    { label: 'Submissions', value: '3', change: '+1', trend: 'up', icon: FileText, color: 'blue' },
+    { label: 'Submissions', value: total, change: '+1', trend: 'up', icon: FileText, color: 'blue' },
     { label: 'Under Review', value: '2', change: '0', trend: 'neutral', icon: Clock, color: 'yellow' },
     { label: 'Accepted', value: '1', change: '+1', trend: 'up', icon: CheckCircle, color: 'green' },
     { label: 'Avg Review Score', value: '8.2', change: '+0.5', trend: 'up', icon: Award, color: 'purple' }
@@ -718,6 +747,24 @@ const PLagioGuardDashboard = () => {
   const user = mockUsers[currentUser];
 
   const renderContent = () => {
+    // const [submissionsPerUser, setSubmissionsPerUser] = useState([]);
+    //     const { isLoaded, isSignedIn, user } = useUser();
+
+    //     const userId = user?.id
+    // useEffect(() => {
+    //       const fetchSubmissionsPerUser = async (userId) => {
+    //         try {
+    //           const response = await axios.get(`/api/submissions/user/${userId}`);
+    //           if(response.success){
+    //           setSubmissionsPerUser(response.data.submissions);
+    //           }
+              
+    //         } catch (error) {
+    //           console.error('Error fetching submissions:', error);
+    //         }
+    //       }
+    //       fetchSubmissionsPerUser(userId);
+    //     })
     switch (activeSection) {
       case 'dashboard':
         return (
@@ -1026,93 +1073,90 @@ const PLagioGuardDashboard = () => {
         return <StylemetricPanel />;
         
       case 'submissions':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">Submissions Management</h1>
-              <div className="flex space-x-3">
-                <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                  <Filter className="w-4 h-4" />
-                  <span>Filter</span>
-                </button>
-               <BulkUploadDialog/>
-              </div>
-            </div>
+  return <SubmissionsPage user={user} />;
+
+        // return (
+        //   <div className="space-y-6">
+        //     <div className="flex items-center justify-between">
+        //       <h1 className="text-2xl font-bold text-gray-900">Submissions Management</h1>
+        //       <div className="flex space-x-3">
+        //         <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+        //           <Filter className="w-4 h-4" />
+        //           <span>Filter</span>
+        //         </button>
+        //        <BulkUploadDialog/>
+        //       </div>
+        //     </div>
             
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conference</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Risk</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plagiarism</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {[
-                      { id: 1, title: "Advanced Neural Networks", author: "Dr. Smith", conference: "ICML 2024", aiRisk: 92, plagiarism: 5, status: "flagged" },
-                      { id: 2, title: "Quantum Computing Methods", author: "Prof. Johnson", conference: "AAAI 2024", aiRisk: 15, plagiarism: 12, status: "clean" },
-                      { id: 3, title: "Machine Learning Ethics", author: "Dr. Williams", conference: "NeurIPS 2024", aiRisk: 67, plagiarism: 3, status: "review" },
-                      { id: 4, title: "Computer Vision Applications", author: "Prof. Davis", conference: "ICCV 2024", aiRisk: 8, plagiarism: 45, status: "flagged" }
-                    ].map((submission) => (
-                      <tr key={submission.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">{submission.title}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {submission.author}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {submission.conference}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm font-medium ${
-                            submission.aiRisk >= 80 ? 'text-red-600' :
-                            submission.aiRisk >= 50 ? 'text-yellow-600' :
-                            'text-green-600'
-                          }`}>
-                            {submission.aiRisk}%
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm font-medium ${
-                            submission.plagiarism >= 30 ? 'text-red-600' :
-                            submission.plagiarism >= 15 ? 'text-yellow-600' :
-                            'text-green-600'
-                          }`}>
-                            {submission.plagiarism}%
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            submission.status === 'flagged' ? 'bg-red-100 text-red-800' :
-                            submission.status === 'review' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {submission.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="text-green-600 hover:text-green-900 mr-3">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="text-gray-600 hover:text-gray-900">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        );
+        //     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        //       <div className="overflow-x-auto">
+        //         <table className="min-w-full divide-y divide-gray-200">
+        //           <thead className="bg-gray-50">
+        //             <tr>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper</th>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conference</th>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Risk</th>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plagiarism</th>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        //             </tr>
+        //           </thead>
+        //           <tbody className="bg-white divide-y divide-gray-200">
+        //             {submissionsPerUser.map((submission) => (
+        //               <tr key={submission.id} className="hover:bg-gray-50">
+        //                 <td className="px-6 py-4 whitespace-nowrap">
+        //                   <div className="font-medium text-gray-900">{submission.title}</div>
+        //                 </td>
+        //                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        //                   {submission.author}
+        //                 </td>
+        //                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+        //                   {submission.conference}
+        //                 </td>
+        //                 <td className="px-6 py-4 whitespace-nowrap">
+        //                   <div className={`text-sm font-medium ${
+        //                     submission.aiRisk >= 80 ? 'text-red-600' :
+        //                     submission.aiRisk >= 50 ? 'text-yellow-600' :
+        //                     'text-green-600'
+        //                   }`}>
+        //                     {submission.aiRisk}%
+        //                   </div>
+        //                 </td>
+        //                 <td className="px-6 py-4 whitespace-nowrap">
+        //                   <div className={`text-sm font-medium ${
+        //                     submission.plagiarism >= 30 ? 'text-red-600' :
+        //                     submission.plagiarism >= 15 ? 'text-yellow-600' :
+        //                     'text-green-600'
+        //                   }`}>
+        //                     {submission.plagiarism}%
+        //                   </div>
+        //                 </td>
+        //                 <td className="px-6 py-4 whitespace-nowrap">
+        //                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+        //                     submission.status === 'flagged' ? 'bg-red-100 text-red-800' :
+        //                     submission.status === 'review' ? 'bg-yellow-100 text-yellow-800' :
+        //                     'bg-green-100 text-green-800'
+        //                   }`}>
+        //                     {submission.status}
+        //                   </span>
+        //                 </td>
+        //                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        //                   <button className="text-green-600 hover:text-green-900 mr-3">
+        //                     <Eye className="w-4 h-4" />
+        //                   </button>
+        //                   <button className="text-gray-600 hover:text-gray-900">
+        //                     <MoreVertical className="w-4 h-4" />
+        //                   </button>
+        //                 </td>
+        //               </tr>
+        //             ))}
+        //           </tbody>
+        //         </table>
+        //       </div>
+        //     </div>
+        //   </div>
+        // );
       
       default:
         return (

@@ -180,6 +180,27 @@ submissionSchema.statics.getAnalytics = async function(days = 30) {
   };
 };
 
+// src/models/Submission.js
+submissionSchema.statics.countCleanPapers = async function(userId = null) {
+  const filter = {
+    "analysis.assessment.verdict": "HUMAN_WRITTEN",
+    "analysis.metrics.watermark.type": null,
+    $or: [
+      { "analysis.metrics.aiDetection.indicators": { $exists: false } },
+      { "analysis.metrics.aiDetection.indicators": { $size: 0 } }
+    ]
+  };
+
+  if (userId) filter.userId = userId;
+
+  const count = await this.countDocuments(filter);
+  return count;
+};
+
+
+
 const Submission = mongoose.model('Submission', submissionSchema);
 
+
 export default Submission;
+
