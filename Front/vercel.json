@@ -1,10 +1,4 @@
 {
-  "build": {
-    "env": {
-      "NODE_ENV": "production"
-    },
-    "outputDirectory": "dist"
-  },
   "rewrites": [
     {
       "source": "/(.*)",
