@@ -46,7 +46,7 @@ const userId=user?.id
 
     try {
       // Upload and get immediate analysis
-      const response = await fetch("https://localhost:8000/api/submissions", {
+      const response = await fetch("http://localhost:8000/api/submissions", {
         method: "POST",
         body: formData,
       });
@@ -93,7 +93,7 @@ const userId=user?.id
        
         // Get the report directly (since we process immediately)
         const reportResponse = await fetch(
-          `https://localhost:8000/api/submissions/${submissionId}/report`
+          `http://localhost:8000/api/submissions/${submissionId}/report`
         );
         
         if (reportResponse.ok) {

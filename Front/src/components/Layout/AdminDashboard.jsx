@@ -622,15 +622,20 @@ const AdminDashboard = () => {
   const [currentUser, setCurrentUser] = useState('admin');
   const [activeSection, setActiveSection] = useState('dashboard');
   const user = mockUsers[currentUser];
-  async function getAllSub() {
+  const[sub,setsub]=useState([])
+  useEffect(()=>{
+ async function getAllSub() {
       try {
       // Upload and get immediate analysis
-      const response = await fetch("http://localhost:8000/api/submissions/allSub", {
+      const response = await fetch("http://localhost:8000/api/submissions/allSubmissions", {
         method: "GET",
      
       });
 
-   console.log(response);
+// console.log(sub);
+const data=await response.json()
+ setsub(data.submissions)
+   console.log(data);
    
 
     } catch (error) {
@@ -641,6 +646,9 @@ const AdminDashboard = () => {
       
     }
   }
+   getAllSub();
+  },[])
+ 
    async function getStudentSub() {
       try {
       // Upload and get immediate analysis
@@ -660,7 +668,7 @@ const AdminDashboard = () => {
       
     }
   }
-//   getAllSub();
+ 
 getStudentSub()
 console.log();
 
@@ -874,12 +882,7 @@ console.log();
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {[
-                      { id: 1, title: "Advanced Neural Networks", author: "Dr. Smith", conference: "ICML 2024", aiRisk: 92, plagiarism: 5, status: "flagged" },
-                      { id: 2, title: "Quantum Computing Methods", author: "Prof. Johnson", conference: "AAAI 2024", aiRisk: 15, plagiarism: 12, status: "clean" },
-                      { id: 3, title: "Machine Learning Ethics", author: "Dr. Williams", conference: "NeurIPS 2024", aiRisk: 67, plagiarism: 3, status: "review" },
-                      { id: 4, title: "Computer Vision Applications", author: "Prof. Davis", conference: "ICCV 2024", aiRisk: 8, plagiarism: 45, status: "flagged" }
-                    ].map((submission) => (
+                    {sub.map((submission) => (
                       <tr key={submission.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="font-medium text-gray-900">{submission.title}</div>

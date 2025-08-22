@@ -8,7 +8,8 @@ import {
   listSubmissions, 
   getAllSubmissions,
   getStudentProfiles,
-  getAdminStats
+  getAdminStats,
+  getSubmissions
 } from "../Controllers/submissionsController.js";
 import Submission from "../modals/Submission.js";
 
@@ -21,6 +22,7 @@ submissionsRouter.post("/", upload.single("file"), handleSubmissionImmediate);
 submissionsRouter.get("/:id/status", getSubmissionStatus);
 // GET /api/submissions/:id/status -> Check status (for polling)
 submissionsRouter.get("/allSub", getAllSubmissions);
+submissionsRouter.get("/allSubmissions", getSubmissions);
 submissionsRouter.get("/getAdminStats", getAdminStats);
 submissionsRouter.get("/studentSub", getStudentProfiles);
 // GET /api/submissions/:id/report -> Get detailed report

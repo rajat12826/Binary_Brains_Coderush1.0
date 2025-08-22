@@ -1048,6 +1048,49 @@ export async function getAllSubmissions(req, res) {
 
 
 
+// GET /api/submissions?limit=10&page=1
+export async function getSubmissions(req, res) {
+  try {
+    const { limit = 10, page = 1 } = req.query;
+
+    const submissions = await Submission.find()
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await Submission.countDocuments();
+
+    // Map submissions to table-friendly format
+    const data = submissions.map(sub => ({
+      id: sub._id,
+      title: sub.title,
+      author: sub.userId,
+      conference: sub.description || "N/A", // You can adjust if you store conference differently
+      aiRisk: Math.round(sub.analysis.assessment.aiProbability * 100) + "%",
+      plagiarism: "N/A", // Add field if you have plagiarism info
+      status: sub.analysis.assessment.riskLevel, // LOW, MEDIUM, HIGH
+      verdict: sub.analysis.assessment.verdict, // HUMAN_WRITTEN, SUSPICIOUS, etc.
+      fileUrl: sub.fileUrl
+    }));
+
+    res.json({
+      success: true,
+      total,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      pages: Math.ceil(total / parseInt(limit)),
+      submissions: data
+    });
+
+  } catch (error) {
+    console.error("Error fetching submissions:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch submissions"
+    });
+  }
+}
+
 export async function getStudentProfiles(req, res) {
   try {
     const aggregation = await Submission.aggregate([
