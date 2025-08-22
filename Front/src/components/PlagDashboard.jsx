@@ -56,6 +56,7 @@ import { UserButton } from '@clerk/clerk-react';
 import ToggleButton from './AnimatedDarkModeToggle';
 import { Link } from 'react-router-dom';
 import BulkUploadDialog from './BulkUploadDialog';
+import UserAnalyticsDashboard from './Layout/UserAnalyticsDashboard';
 
 // Mock data for PLagioGuard system
 const mockUsers = {
@@ -775,7 +776,7 @@ const PLagioGuardDashboard = () => {
   const [currentUser, setCurrentUser] = useState('author');
   const [activeSection, setActiveSection] = useState('dashboard');
   const user = mockUsers[currentUser];
-
+  
   const renderContent = () => {
     // const [submissionsPerUser, setSubmissionsPerUser] = useState([]);
     //     const { isLoaded, isSignedIn, user } = useUser();
@@ -890,54 +891,9 @@ const PLagioGuardDashboard = () => {
             )}
             
             {currentUser === 'author' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: "Deep Learning Optimization", status: "under_review", submitted: "2 weeks ago", conference: "ICML 2024" },
-                      { title: "Neural Network Architecture", status: "accepted", submitted: "1 month ago", conference: "NeurIPS 2024" },
-                      { title: "Computer Vision Methods", status: "revisions_requested", submitted: "3 weeks ago", conference: "ICCV 2024" }
-                    ].map((paper, idx) => (
-                      <div key={idx} className="p-4 border border-gray-200 rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-gray-900">{paper.title}</h3>
-                          <div className={`text-xs px-2 py-1 rounded-full ${
-                            paper.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                            paper.status === 'revisions_requested' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
-                            {paper.status.replace('_', ' ').toUpperCase()}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600">{paper.conference} • {paper.submitted}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Deadlines</h2>
-                  <div className="space-y-4">
-                    {[
-                      { conference: "AAAI 2025", deadline: "Jan 15, 2025", daysLeft: 45, type: "Full Paper" },
-                      { conference: "IJCAI 2025", deadline: "Feb 20, 2025", daysLeft: 81, type: "Workshop" },
-                      { conference: "ICML 2025", deadline: "Mar 1, 2025", daysLeft: 90, type: "Short Paper" }
-                    ].map((conf, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{conf.conference}</h3>
-                          <p className="text-sm text-gray-600">{conf.type} • {conf.deadline}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">{conf.daysLeft} days</div>
-                          <div className="text-xs text-gray-500">remaining</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            
+                <UserAnalyticsDashboard/>
+          
             )}
             
             {/* System Performance Panel */}

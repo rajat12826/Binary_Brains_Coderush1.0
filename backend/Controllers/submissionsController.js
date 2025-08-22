@@ -8,6 +8,7 @@ import { chatSession } from "../modals/GeminiAIModel.js";
 import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import User from "../modals/User.js";
 dotenv.config();
 // Add this email utility function at the top of your file, after imports
 async function sendNotificationEmail(data) {
@@ -1387,3 +1388,411 @@ export async function getStudentProfiles(req, res) {
     res.status(500).json({ success: false, error: "Failed to fetch student profiles" });
   }
 }
+
+
+
+
+
+export const getUserAnalytics = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { period = 30 } = req.query; // Default to 30 days
+    
+    // Calculate date range
+    const days = parseInt(period);
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    
+    // Get user info - since userId is a string (not ObjectId), find by userId field
+    let user;
+    try {
+      // First try to find by userId field (for Clerk IDs)
+      user = await User.findOne({ userId: userId }).select('name email createdAt');
+      
+      // If not found and it looks like an ObjectId, try finding by _id
+      if (!user && /^[0-9a-fA-F]{24}$/.test(userId)) {
+        user = await User.findById(userId).select('name email createdAt');
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      // Continue without user info if User model doesn't exist or has issues
+    }
+    
+    // If user not found, create a basic user object
+    if (!user) {
+      user = {
+        _id: userId,
+        name: `User ${userId.slice(-8)}`, // Show last 8 characters
+        email: 'user@example.com',
+        createdAt: new Date()
+      };
+    }
+
+    // Base filter for user submissions within the period
+    const baseFilter = { 
+      userId: userId,
+      createdAt: { $gte: cutoffDate }
+    };
+
+    // Get total submissions count
+    const totalSubmissions = await Submission.countDocuments(baseFilter);
+
+    if (totalSubmissions === 0) {
+      return res.json({
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          memberSince: user.createdAt
+        },
+        analytics: {
+          summary: {
+            totalSubmissions: 0,
+            avgAIProbability: 0,
+            avgPerplexity: 0,
+            avgEntropy: 0,
+            avgWordCount: 0,
+            avgSentenceLength: 0,
+            avgLexicalDiversity: 0,
+            cleanPapers: 0
+          },
+          cleanPapersCount: 0,
+          charts: {
+            verdictDistribution: {
+              HUMAN_WRITTEN: 0,
+              SUSPICIOUS: 0,
+              LIKELY_AI: 0,
+              AI_GENERATED: 0
+            },
+            riskDistribution: {
+              LOW: 0,
+              MEDIUM: 0,
+              HIGH: 0
+            },
+            reviewDistribution: {
+              PENDING: 0,
+              APPROVED: 0,
+              REJECTED: 0
+            },
+            dailyTrend: [],
+            aiProbabilityRanges: []
+          }
+        }
+      });
+    }
+
+    // Get summary statistics
+    const summaryPipeline = [
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: null,
+          totalSubmissions: { $sum: 1 },
+          avgAIProbability: { $avg: "$analysis.assessment.aiProbability" },
+          avgPerplexity: { $avg: "$analysis.metrics.perplexity" },
+          avgEntropy: { $avg: "$analysis.metrics.entropy" },
+          avgWordCount: { $avg: "$analysis.documentInfo.wordCount" },
+          avgSentenceLength: { $avg: "$analysis.metrics.stylometry.avgSentenceLength" },
+          avgLexicalDiversity: { $avg: "$analysis.metrics.stylometry.lexicalDiversity" }
+        }
+      }
+    ];
+
+    const [summaryResult] = await Submission.aggregate(summaryPipeline);
+
+    // Get clean papers count
+    const cleanPapersCount = await Submission.countCleanPapers(userId);
+
+    // Get verdict distribution
+    const verdictPipeline = [
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: "$analysis.assessment.verdict",
+          count: { $sum: 1 }
+        }
+      }
+    ];
+
+    const verdictResults = await Submission.aggregate(verdictPipeline);
+    const verdictDistribution = {
+      HUMAN_WRITTEN: 0,
+      SUSPICIOUS: 0,
+      LIKELY_AI: 0,
+      AI_GENERATED: 0
+    };
+    verdictResults.forEach(result => {
+      if (result._id && verdictDistribution.hasOwnProperty(result._id)) {
+        verdictDistribution[result._id] = result.count;
+      }
+    });
+
+    // Get risk distribution
+    const riskPipeline = [
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: "$analysis.assessment.riskLevel",
+          count: { $sum: 1 }
+        }
+      }
+    ];
+
+    const riskResults = await Submission.aggregate(riskPipeline);
+    const riskDistribution = {
+      LOW: 0,
+      MEDIUM: 0,
+      HIGH: 0
+    };
+    riskResults.forEach(result => {
+      if (result._id && riskDistribution.hasOwnProperty(result._id)) {
+        riskDistribution[result._id] = result.count;
+      }
+    });
+
+    // Get review status distribution
+    const reviewPipeline = [
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: "$analysis.reviewStatus",
+          count: { $sum: 1 }
+        }
+      }
+    ];
+
+    const reviewResults = await Submission.aggregate(reviewPipeline);
+    const reviewDistribution = {
+      PENDING: 0,
+      APPROVED: 0,
+      REJECTED: 0
+    };
+    reviewResults.forEach(result => {
+      if (result._id && reviewDistribution.hasOwnProperty(result._id)) {
+        reviewDistribution[result._id] = result.count;
+      }
+    });
+
+    // Get daily trend data
+    const dailyTrendPipeline = [
+      { $match: baseFilter },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt"
+            }
+          },
+          count: { $sum: 1 },
+          avgAIProbability: { $avg: "$analysis.assessment.aiProbability" }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ];
+
+    const dailyTrend = await Submission.aggregate(dailyTrendPipeline);
+
+    // Get AI probability ranges
+    const aiProbabilityRangesPipeline = [
+      { $match: baseFilter },
+      {
+        $bucket: {
+          groupBy: "$analysis.assessment.aiProbability",
+          boundaries: [0, 0.2, 0.4, 0.6, 0.8, 1.0],
+          default: 1.0,
+          output: {
+            count: { $sum: 1 }
+          }
+        }
+      }
+    ];
+
+    const aiProbabilityRanges = await Submission.aggregate(aiProbabilityRangesPipeline);
+
+    // Format the response
+    const analyticsData = {
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        memberSince: user.createdAt
+      },
+      analytics: {
+        summary: {
+          totalSubmissions: summaryResult.totalSubmissions,
+          avgAIProbability: summaryResult.avgAIProbability || 0,
+          avgPerplexity: summaryResult.avgPerplexity || 0,
+          avgEntropy: summaryResult.avgEntropy || 0,
+          avgWordCount: Math.round(summaryResult.avgWordCount || 0),
+          avgSentenceLength: summaryResult.avgSentenceLength || 0,
+          avgLexicalDiversity: summaryResult.avgLexicalDiversity || 0,
+          cleanPapers: cleanPapersCount
+        },
+        cleanPapersCount: cleanPapersCount,
+        charts: {
+          verdictDistribution,
+          riskDistribution,
+          reviewDistribution,
+          dailyTrend,
+          aiProbabilityRanges
+        }
+      }
+    };
+
+    res.json(analyticsData);
+  } catch (error) {
+    console.error('Error fetching user analytics:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get analytics for all users (admin endpoint)
+export const getAllUsersAnalytics = async (req, res) => {
+  try {
+    const { period = 30 } = req.query;
+    const days = parseInt(period);
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // Get overall analytics using the static method from your model
+    const overallAnalytics = await Submission.getAnalytics(days);
+
+    // Get top performers
+    const topPerformersPipeline = [
+      { $match: { createdAt: { $gte: cutoffDate } } },
+      {
+        $group: {
+          _id: "$userId",
+          totalSubmissions: { $sum: 1 },
+          cleanPapers: {
+            $sum: {
+              $cond: [
+                { 
+                  $and: [
+                    { $eq: ["$analysis.assessment.verdict", "HUMAN_WRITTEN"] },
+                    { $eq: ["$analysis.metrics.watermark.type", null] },
+                    {
+                      $or: [
+                        { $eq: ["$analysis.metrics.aiDetection.indicators", []] },
+                        { $not: { $ifNull: ["$analysis.metrics.aiDetection.indicators", false] } }
+                      ]
+                    }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          avgAIProbability: { $avg: "$analysis.assessment.aiProbability" },
+          successRate: {
+            $avg: {
+              $cond: [
+                { $eq: ["$analysis.assessment.verdict", "HUMAN_WRITTEN"] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "users", // Adjust collection name as needed
+          let: { userIdString: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ["$userId", "$userIdString"] }, // For string userIds (Clerk)
+                    { $eq: ["$_id", "$userIdString"] }     // For ObjectId _ids
+                  ]
+                }
+              }
+            }
+          ],
+          as: "userInfo"
+        }
+      },
+      {
+        $project: {
+          userId: "$_id",
+          userName: { $arrayElemAt: ["$userInfo.name", 0] },
+          userEmail: { $arrayElemAt: ["$userInfo.email", 0] },
+          totalSubmissions: 1,
+          cleanPapers: 1,
+          avgAIProbability: 1,
+          successRate: 1
+        }
+      },
+      { $sort: { successRate: -1, cleanPapers: -1 } },
+      { $limit: 10 }
+    ];
+
+    const topPerformers = await Submission.aggregate(topPerformersPipeline);
+
+    res.json({
+      period: days,
+      overall: overallAnalytics,
+      topPerformers
+    });
+
+  } catch (error) {
+    console.error('Error fetching all users analytics:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get user submissions list with pagination
+export const getUserSubmissions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { 
+      page = 1, 
+      limit = 10, 
+      status, 
+      verdict, 
+      riskLevel,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const filter = { userId };
+    
+    // Apply filters if provided
+    if (status) filter['analysis.reviewStatus'] = status;
+    if (verdict) filter['analysis.assessment.verdict'] = verdict;
+    if (riskLevel) filter['analysis.assessment.riskLevel'] = riskLevel;
+
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [submissions, totalCount] = await Promise.all([
+      Submission.find(filter)
+        .select('title description analysis.assessment analysis.documentInfo createdAt analysis.reviewStatus')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Submission.countDocuments(filter)
+    ]);
+
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+
+    res.json({
+      submissions,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalCount,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching user submissions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
