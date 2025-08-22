@@ -1,5 +1,6 @@
 // src/routes/submissions.js
 import express from "express";
+import axios from "axios";
 import { upload } from "../middleware/multer.js";
 import { 
   handleSubmissionImmediate, 
@@ -203,28 +204,57 @@ submissionsRouter.get("/user/:id", async (req, res) => {
   }
 });
 
+// submissionsRouter.get('/download/:id', async (req, res) => {
+//   try {
+//     const submission = await Submission.findById(req.params.id);
+//     if (!submission || !submission.fileUrl) {
+//       return res.status(404).send('File not found');
+//     }
+
+//     // Stream the file from Cloudinary
+//     const response = await axios.get(submission.fileUrl, { responseType: 'stream' });
+
+//     // Set headers for PDF download
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', `attachment; filename="${submission.title}.pdf"`);
+
+//     // Pipe to client
+//     response.data.pipe(res);
+
+//   } catch (err) {
+//     console.error('Download error:', err.message);
+//     res.status(500).send('Server error while downloading PDF');
+//   }
+// });
+
 submissionsRouter.get('/download/:id', async (req, res) => {
   try {
-    const submission = await Submission.findById(req.params.id);
-    if (!submission || !submission.fileUrl) {
-      return res.status(404).send('File not found');
+    const { id } = req.params;
+
+    const submission = await Submission.findById(id);
+    if (!submission) return res.status(404).json({ message: "Submission not found" });
+
+    if (!submission.fileUrl) {
+      return res.status(400).json({ message: "No file uploaded for this submission" });
     }
 
-    // Stream the file from Cloudinary
-    const response = await axios.get(submission.fileUrl, { responseType: 'stream' });
+    // Stream the Cloudinary file
+    const cloudResponse = await axios.get(submission.fileUrl, { responseType: "stream" });
 
-    // Set headers for PDF download
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${submission.title}.pdf"`);
+    // Set headers to make the browser download it
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${submission.title || "document"}.pdf"`
+    );
+    res.setHeader("Content-Type", "application/pdf");
 
-    // Pipe to client
-    response.data.pipe(res);
+    cloudResponse.data.pipe(res);
 
-  } catch (err) {
-    console.error('Download error:', err.message);
-    res.status(500).send('Server error while downloading PDF');
+  } catch (error) {
+    console.error("Download error:", error.message);
+    res.status(500).json({ message: "Server error while downloading file" });
   }
-});
-
+}
+);
 
 export default submissionsRouter;
