@@ -9,13 +9,15 @@ import AboutPage from "./components/About";
 import ProtectedRoute from "./ProtectedRoute"; // import your ProtectedRoute
 import SignUpPage from "./(auth)/sign-up/SignUpPage";
 import PLagioGuardDashboard from "./components/PlagDashboard";
+import Signup from "./components/SignUp";
+import LoginPage from "./components/Login";
 
 const App = () => {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/sign-in" element={<SignInPage />} />
-      <Route path="/sign-up" element={<SignUpPage />} />
+      <Route path="/sign-in" element={<LoginPage />} />
+      <Route path="/sign-up" element={<Signup />} />
       <Route path="/about-us" element={<AboutPage />} />
       <Route path="/features" element={<FeaturesPage />} />
       <Route path="/" element={<AcadeMateLanding />} />
