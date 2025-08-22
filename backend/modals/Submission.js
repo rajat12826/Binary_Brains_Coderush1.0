@@ -100,6 +100,9 @@ type: String,
         required: true
       }
     },
+    Appointed:{type:mongoose.Schema.Types.ObjectId,ref:"User",default:null},
+    reviewStatus:{type:String,default:"PENDING",enum:["PENDING","APPROVED","REJECTED"]},
+
     
     // Processing metadata
     processingTime: { type: Number, default: 0 } // milliseconds

@@ -117,6 +117,7 @@ const [ptotal, setPtotal] = useState(0);
    useEffect(() => {
     console.log(userId);
     async function fetchTotal() {
+      
       try {
         const res = await axios.get(`http://localhost:8000/api/submissions/total/${userId}`);
         const res1 = await axios.get(`http://localhost:8000/api/submissions/aitotal/${userId}`);
@@ -148,12 +149,12 @@ useEffect(() => {
     if (userId) fetchCleanCount();
   }, [userId]);
 
-  const adminStats = [
-    { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
-    { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
-  ];
+  // const adminStats = [
+  //   { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
+  //   { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
+  //   { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
+  //   { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
+  // ];
 
   const reviewerStats = [
     { label: 'Assigned Papers', value: '8', change: '+2', trend: 'up', icon: FileText, color: 'blue' },
@@ -164,9 +165,9 @@ useEffect(() => {
 
   const authorStats = [
     { label: 'Submissions', value: total, change: '+1', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Under Review', value: '2', change: '0', trend: 'neutral', icon: Clock, color: 'yellow' },
-    { label: 'Accepted', value: '1', change: '+1', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'Avg Review Score', value: '8.2', change: '+0.5', trend: 'up', icon: Award, color: 'purple' }
+    { label: 'Under Review', value: pendingTotal, change: '0', trend: 'neutral', icon: Clock, color: 'yellow' },
+    { label: 'Accepted', value: acceptedTotal, change: '+1', trend: 'up', icon: CheckCircle, color: 'green' },
+    { label: 'Avg Review Score', value: total/pendingTotal, change: '+0.5', trend: 'up', icon: Award, color: 'purple' }
   ];
 
   const stats =  userRole === 'reviewer' ? reviewerStats : authorStats;
