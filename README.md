@@ -12,7 +12,7 @@ This repository, Binary_Brains_Coderush1.0, is a web application built using a c
 
 ## Features ✨
 
-*   **User Authentication:**  The application includes user signup and login functionality.  (Inferred from the presence of `SignInPage` and `SignUpPage` components.)
+*   **User Authentication:**  The application includes user signup and login functionality from clerk auth.  (Inferred from the presence of `SignInPage` and `SignUpPage` components.)
 *   **Dashboard:** A dashboard is present, likely providing user-specific information and functionality. (Inferred from the presence of `PLagioGuardDashboard` and `AdminDashboard` components.)
 *   **Admin Panel:**  An admin dashboard suggests administrative capabilities.
 *   **Backend API:** A backend API is implemented using Node.js and Express, handling user authentication, submission processing, and potentially other functionalities.
