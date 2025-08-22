@@ -1,7 +1,8 @@
 // src/index.js
 import dotenv from "dotenv";
 dotenv.config();
-
+import session from "express-session";
+import MongoStore from "connect-mongo";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -20,6 +21,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
+
 // Ensure upload dir exists
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
 if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -35,6 +37,15 @@ mongoose.connect(process.env.MONGO_URI)
     console.log("Mongo connection error", err);
     process.exit(1);
   });
+  app.use(
+  session({
+    secret: "supersecretkey",
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    cookie: { maxAge: 1000 * 60 * 60 }, // 1 hour
+  })
+);
 
 // Init Cloudinary
 initCloudinary();
