@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import ToggleButton from "./AnimatedDarkModeToggle"
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -47,6 +48,7 @@ const Navbar = () => {
             onClick={() => window.location.href = "/dashboard"}>
               Get Started
             </Button>
+            <ToggleButton/>
           </div>
 
           {/* Mobile Menu Button */}

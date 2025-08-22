@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from "@clerk/clerk-react";
 import axios from "axios";
-import SubmissionsPage from './SubmissionsPage';
 
 import {
   Bell,
@@ -52,128 +51,92 @@ import {
   Flag
 } from 'lucide-react';
 import { UserButton } from '@clerk/clerk-react';
-import ToggleButton from './AnimatedDarkModeToggle';
+import ToggleButton from '../AnimatedDarkModeToggle';
 import { Link } from 'react-router-dom';
-import BulkUploadDialog from './BulkUploadDialog';
-
+import BulkUploadDialog from '../BulkUploadDialog';
+import DetectionDashboard from '../DetectionDashboard';
 // Mock data for PLagioGuard system
 const mockUsers = {
- 
-  reviewer: {
-    id: 2,
-    name: "Prof. Michael Rodriguez",
-    email: "m.rodriguez@university.edu", 
-    role: "reviewer",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-    department: "AI Research Lab",
-    expertise: ["Machine Learning", "NLP", "Computer Vision"]
+  admin: {
+    id: 1,
+    name: "Dr. Sarah Chen",
+    email: "sarah.chen@university.edu",
+    role: "admin",
+    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
+    department: "Computer Science",
+    permissions: ["full_access", "system_config", "user_management"]
   },
-  author: {
-    id: 3,
-    name: "Rajat Parihar",
-    email: "alex.thompson@student.edu",
-    role: "author",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    institution: "MIT",
-    submissions: 3
-  }
+ 
 };
 
 const navigationItems = {
- 
-  reviewer: [
+  admin: [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'assigned', label: 'Assigned Papers', icon: FileText, badge: '8' },
-    { id: 'detection', label: 'Detection Results', icon: Brain },
-    { id: 'reviews', label: 'My Reviews', icon: Eye },
-    { id: 'analytics', label: 'Review Analytics', icon: BarChart3 },
-    { id: 'messages', label: 'Messages', icon: MessageCircle, badge: '3' }
+    { id: 'submissions', label: 'Submissions', icon: FileText, badge: '247' },
+    { id: 'detection', label: 'AI Detection', icon: Brain, badge: '12' },
+    { id: 'plagiarism', label: 'Plagiarism Scan', icon: Shield },
+    { id: 'stylometry', label: 'Stylometric Analysis', icon: Fingerprint },
+    { id: 'users', label: 'User Management', icon: Users },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'conferences', label: 'Conferences', icon: Calendar },
+    { id: 'settings', label: 'System Settings', icon: Settings }
   ],
-  author: [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'submissions', label: 'My Submissions', icon: FileText, badge: '3' },
-    { id: 'status', label: 'Review Status', icon: Activity },
-    { id: 'feedback', label: 'Feedback', icon: MessageCircle },
-    { id: 'conferences', label: 'Browse Conferences', icon: Calendar }
-  ]
+
 };
 
 // Dashboard Statistics Component
 const DashboardStats = ({ userRole }) => {
 
-  // const { user } = useUser();
-  // const authorId = user?.id; 
-
-  // const [total, setTotal] = useState(0);
-
-   const { isLoaded, isSignedIn, user } = useUser();
-
-  const userId = user?.id
-  console.log(userId);
+  const { user } = useUser();
+  const authorId = user?.id; 
 
   const [total, setTotal] = useState(0);
-  const [aitotal, setAitotal] = useState(0);
-const [ptotal, setPtotal] = useState(0);
+
    useEffect(() => {
-    console.log(userId);
+    console.log(user);
     async function fetchTotal() {
       try {
-        const res = await axios.get(`http://localhost:8000/api/submissions/total/${userId}`);
-        const res1 = await axios.get(`http://localhost:8000/api/submissions/aitotal/${userId}`);
-        const res2 = await axios.get(`http://localhost:8000/api/submissions/ptotal/${userId}`);
-        console.log(res.data.total);
+        const res = await axios.get(`/api/submissions/total/${authorId}`);
         setTotal(res.data.total);
-        setAitotal(res1.data.aitotal);
-        setPtotal(res2.data.ptotal);
       } catch (err) {
         console.error(err);
       }
     }
 
-    if (userId) fetchTotal();
-  }, [userId]);
-
-  const [cleanPapers, setCleanPapers] = useState(0);
-
-useEffect(() => {
-    async function fetchCleanCount() {
-      try {
-        const res = await axios.get(`http://localhost:8000/api/submissions/clean/${userId}`);
-        setCleanPapers(res.data.cleanCount);
-      } catch (err) {
-        console.error(err);
-      }
+    if (authorId) fetchTotal();
+  }, [authorId]);
+const[adminStats, setAdminStats]= useState([]);
+    useEffect(() => {
+    async function fetchAdminStats() {
+        try {
+            const res = await axios.get("http://localhost:8000/api/submissions/getAdminStats");
+            if (res.data.success) {
+                console.log(res.data.data[0].icon);
+                
+                setAdminStats(res.data.data);
+                // console.log(res.data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch admin stats:", err);
+        }
     }
+   fetchAdminStats()
 
-    if (userId) fetchCleanCount();
-  }, [userId]);
+}, []);
+//   const adminStats = [
+//     { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
+//     { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
+//     { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
+//     { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
+//   ];
 
-  const adminStats = [
-    { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
-    { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
-  ];
 
-  const reviewerStats = [
-    { label: 'Assigned Papers', value: '8', change: '+2', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Completed Reviews', value: '23', change: '+5', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'AI Flags Reviewed', value: '12', change: '+3', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Average Score', value: '7.8', change: '+0.2', trend: 'up', icon: Award, color: 'purple' }
-  ];
 
-  const authorStats = [
-    { label: 'Submissions', value: total, change: '+1', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Under Review', value: '2', change: '0', trend: 'neutral', icon: Clock, color: 'yellow' },
-    { label: 'Accepted', value: '1', change: '+1', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'Avg Review Score', value: '8.2', change: '+0.5', trend: 'up', icon: Award, color: 'purple' }
-  ];
-
-  const stats =  userRole === 'reviewer' ? reviewerStats : authorStats;
+  const stats =adminStats
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => (
+      {adminStats?.map((stat, index) => (
         <motion.div
           key={index}
           initial={{ opacity: 0, y: 20 }}
@@ -204,7 +167,14 @@ useEffect(() => {
               stat.color === 'purple' ? 'bg-purple-100 text-purple-600' :
               'bg-yellow-100 text-yellow-600'
             }`}>
-              <stat.icon className="w-6 h-6" />
+            {
+  index === 0 ? <FileText className="w-6 h-6" /> :
+  index === 1 ? <Brain className="w-6 h-6" /> :
+  index === 2 ? <Shield className="w-6 h-6" /> :
+  index === 3 ? <CheckCircle className="w-6 h-6" /> :
+  null
+}
+
             </div>
           </div>
         </motion.div>
@@ -255,100 +225,7 @@ const AIDetectionPanel = () => {
         </div>
       </div>
       
-      <div className="p-6">
-        {activeTab === 'overview' && (
-          <div className="space-y-4">
-            {detectionResults.map((result) => (
-              <div key={result.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{result.title}</h3>
-                  <p className="text-sm text-gray-600">by {result.author} • {result.timestamp}</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <div className="text-sm font-medium">AI Score: {result.aiScore}%</div>
-                    <div className={`text-xs px-2 py-1 rounded-full ${
-                      result.status === 'high_risk' ? 'bg-red-100 text-red-700' :
-                      result.status === 'medium_risk' ? 'bg-yellow-100 text-yellow-700' :
-                      result.status === 'low_risk' ? 'bg-blue-100 text-blue-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {result.status.replace('_', ' ').toUpperCase()}
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {activeTab === 'entropy' && (
-          <div className="text-center py-8">
-            <Cpu className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Entropy Analysis</h3>
-            <p className="text-gray-600">Advanced entropy-based detection algorithms analyze text randomness patterns to identify AI-generated content.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">2.34</div>
-                <div className="text-sm text-gray-600">Avg Entropy</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">89%</div>
-                <div className="text-sm text-gray-600">Accuracy</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">156ms</div>
-                <div className="text-sm text-gray-600">Avg Process</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'perplexity' && (
-          <div className="text-center py-8">
-            <Brain className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Perplexity Analysis</h3>
-            <p className="text-gray-600">Language model perplexity scores help identify unnaturally predictable text patterns common in AI writing.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">45.7</div>
-                <div className="text-sm text-gray-600">Avg Score</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">92%</div>
-                <div className="text-sm text-gray-600">Detection Rate</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">234ms</div>
-                <div className="text-sm text-gray-600">Avg Process</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'watermarks' && (
-          <div className="text-center py-8">
-            <Fingerprint className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">AI Watermark Detection</h3>
-            <p className="text-gray-600">Advanced algorithms detect hidden watermarks and signatures left by AI writing tools.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">23</div>
-                <div className="text-sm text-gray-600">Detected</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">97%</div>
-                <div className="text-sm text-gray-600">Precision</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">15</div>
-                <div className="text-sm text-gray-600">Models Covered</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <DetectionDashboard activeTab={activeTab}/>
     </div>
   );
 };
@@ -357,12 +234,30 @@ const AIDetectionPanel = () => {
 const StylemetricPanel = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   
-  const studentProfiles = [
-    { id: 1, name: "Alice Johnson", papers: 5, consistency: 94, flagged: false, avgWordLength: 5.2, sentenceComplexity: 8.4 },
-    { id: 2, name: "Bob Smith", papers: 3, consistency: 67, flagged: true, avgWordLength: 4.8, sentenceComplexity: 6.2 },
-    { id: 3, name: "Carol Davis", papers: 7, consistency: 89, flagged: false, avgWordLength: 5.8, sentenceComplexity: 9.1 },
-    { id: 4, name: "David Wilson", papers: 4, consistency: 45, flagged: true, avgWordLength: 6.2, sentenceComplexity: 7.8 }
-  ];
+  const[studentProfiles, setStudentProfiles] = useState([])
+    useEffect(() => {
+       async function getStudentSub() {
+      try {
+      // Upload and get immediate analysis
+      const response = await fetch("http://localhost:8000/api/submissions/studentSub", {
+        method: "GET",
+     
+      });
+      const data = await response.json();
+      setStudentProfiles(data.students)
+   console.log(response);
+   
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+    //   setError(error.message || "An error occurred during processing");
+      
+    } finally {
+      
+    }
+  }
+        getStudentSub();
+    }, []);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -723,30 +618,53 @@ const DashboardLayout = ({ children, user, activeSection, setActiveSection }) =>
 };
 
 // Main PLagioGuard Dashboard Component
-const PLagioGuardDashboard = () => {
-  const [currentUser, setCurrentUser] = useState('author');
+const AdminDashboard = () => {
+  const [currentUser, setCurrentUser] = useState('admin');
   const [activeSection, setActiveSection] = useState('dashboard');
   const user = mockUsers[currentUser];
+  async function getAllSub() {
+      try {
+      // Upload and get immediate analysis
+      const response = await fetch("http://localhost:8000/api/submissions/allSub", {
+        method: "GET",
+     
+      });
+
+   console.log(response);
+   
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+    //   setError(error.message || "An error occurred during processing");
+      
+    } finally {
+      
+    }
+  }
+   async function getStudentSub() {
+      try {
+      // Upload and get immediate analysis
+      const response = await fetch("http://localhost:8000/api/submissions/studentSub", {
+        method: "GET",
+     
+      });
+
+   console.log(response);
+   
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+    //   setError(error.message || "An error occurred during processing");
+      
+    } finally {
+      
+    }
+  }
+//   getAllSub();
+getStudentSub()
+console.log();
 
   const renderContent = () => {
-    // const [submissionsPerUser, setSubmissionsPerUser] = useState([]);
-    //     const { isLoaded, isSignedIn, user } = useUser();
-
-    //     const userId = user?.id
-    // useEffect(() => {
-    //       const fetchSubmissionsPerUser = async (userId) => {
-    //         try {
-    //           const response = await axios.get(`/api/submissions/user/${userId}`);
-    //           if(response.success){
-    //           setSubmissionsPerUser(response.data.submissions);
-    //           }
-              
-    //         } catch (error) {
-    //           console.error('Error fetching submissions:', error);
-    //         }
-    //       }
-    //       fetchSubmissionsPerUser(userId);
-    //     })
     switch (activeSection) {
       case 'dashboard':
         return (
@@ -756,141 +674,22 @@ const PLagioGuardDashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-900">Conference Management Dashboard</h1>
                 <p className="text-gray-600 mt-1">Advanced AI detection and plagiarism prevention toolkit</p>
               </div>
-              <div className="flex space-x-3">
-                <select 
-                  value={currentUser} 
-                  onChange={(e) => setCurrentUser(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  {/* <option value="admin">Admin View</option> */}
-                  <option value="reviewer">Reviewer View</option>
-                  <option value="author">Author View</option>
-                </select>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                  <Plus className="w-4 h-4 inline mr-2" />
-                  New Conference
-                </button>
-              </div>
+            
             </div>
             
             <DashboardStats userRole={currentUser} />
             
-         
-            {currentUser === 'reviewer' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Reviews</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: "Machine Learning in Healthcare", author: "Dr. Smith", deadline: "3 days", risk: "medium" },
-                      { title: "Quantum Computing Applications", author: "Prof. Johnson", deadline: "5 days", risk: "low" },
-                      { title: "AI Ethics Framework", author: "Dr. Brown", deadline: "1 week", risk: "high" }
-                    ].map((paper, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{paper.title}</h3>
-                          <p className="text-sm text-gray-600">by {paper.author}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-500">{paper.deadline} left</div>
-                          <div className={`text-xs px-2 py-1 rounded-full mt-1 ${
-                            paper.risk === 'high' ? 'bg-red-100 text-red-700' :
-                            paper.risk === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {paper.risk} risk
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            {currentUser === 'admin' && (
+              <>
+                <AIDetectionPanel />
+                <div className="mt-8">
+                  <StylemetricPanel />
                 </div>
-                
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Review Analytics</h2>
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Completion Rate</span>
-                        <span className="font-medium">87%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '87%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Average Score Given</span>
-                        <span className="font-medium">7.8/10</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '78%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Response Time</span>
-                        <span className="font-medium">2.3 days avg</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </>
             )}
             
-            {currentUser === 'author' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: "Deep Learning Optimization", status: "under_review", submitted: "2 weeks ago", conference: "ICML 2024" },
-                      { title: "Neural Network Architecture", status: "accepted", submitted: "1 month ago", conference: "NeurIPS 2024" },
-                      { title: "Computer Vision Methods", status: "revisions_requested", submitted: "3 weeks ago", conference: "ICCV 2024" }
-                    ].map((paper, idx) => (
-                      <div key={idx} className="p-4 border border-gray-200 rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-gray-900">{paper.title}</h3>
-                          <div className={`text-xs px-2 py-1 rounded-full ${
-                            paper.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                            paper.status === 'revisions_requested' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
-                            {paper.status.replace('_', ' ').toUpperCase()}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600">{paper.conference} • {paper.submitted}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Deadlines</h2>
-                  <div className="space-y-4">
-                    {[
-                      { conference: "AAAI 2025", deadline: "Jan 15, 2025", daysLeft: 45, type: "Full Paper" },
-                      { conference: "IJCAI 2025", deadline: "Feb 20, 2025", daysLeft: 81, type: "Workshop" },
-                      { conference: "ICML 2025", deadline: "Mar 1, 2025", daysLeft: 90, type: "Short Paper" }
-                    ].map((conf, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{conf.conference}</h3>
-                          <p className="text-sm text-gray-600">{conf.type} • {conf.deadline}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">{conf.daysLeft} days</div>
-                          <div className="text-xs text-gray-500">remaining</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+          
+         
             
             {/* System Performance Panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -1047,90 +846,93 @@ const PLagioGuardDashboard = () => {
         return <StylemetricPanel />;
         
       case 'submissions':
-  return <SubmissionsPage user={user} />;
-
-        // return (
-        //   <div className="space-y-6">
-        //     <div className="flex items-center justify-between">
-        //       <h1 className="text-2xl font-bold text-gray-900">Submissions Management</h1>
-        //       <div className="flex space-x-3">
-        //         <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-        //           <Filter className="w-4 h-4" />
-        //           <span>Filter</span>
-        //         </button>
-        //        <BulkUploadDialog/>
-        //       </div>
-        //     </div>
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-900">Submissions Management</h1>
+              <div className="flex space-x-3">
+                <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <Filter className="w-4 h-4" />
+                  <span>Filter</span>
+                </button>
+               <BulkUploadDialog/>
+              </div>
+            </div>
             
-        //     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        //       <div className="overflow-x-auto">
-        //         <table className="min-w-full divide-y divide-gray-200">
-        //           <thead className="bg-gray-50">
-        //             <tr>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper</th>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conference</th>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Risk</th>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plagiarism</th>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-        //               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-        //             </tr>
-        //           </thead>
-        //           <tbody className="bg-white divide-y divide-gray-200">
-        //             {submissionsPerUser.map((submission) => (
-        //               <tr key={submission.id} className="hover:bg-gray-50">
-        //                 <td className="px-6 py-4 whitespace-nowrap">
-        //                   <div className="font-medium text-gray-900">{submission.title}</div>
-        //                 </td>
-        //                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        //                   {submission.author}
-        //                 </td>
-        //                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-        //                   {submission.conference}
-        //                 </td>
-        //                 <td className="px-6 py-4 whitespace-nowrap">
-        //                   <div className={`text-sm font-medium ${
-        //                     submission.aiRisk >= 80 ? 'text-red-600' :
-        //                     submission.aiRisk >= 50 ? 'text-yellow-600' :
-        //                     'text-green-600'
-        //                   }`}>
-        //                     {submission.aiRisk}%
-        //                   </div>
-        //                 </td>
-        //                 <td className="px-6 py-4 whitespace-nowrap">
-        //                   <div className={`text-sm font-medium ${
-        //                     submission.plagiarism >= 30 ? 'text-red-600' :
-        //                     submission.plagiarism >= 15 ? 'text-yellow-600' :
-        //                     'text-green-600'
-        //                   }`}>
-        //                     {submission.plagiarism}%
-        //                   </div>
-        //                 </td>
-        //                 <td className="px-6 py-4 whitespace-nowrap">
-        //                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-        //                     submission.status === 'flagged' ? 'bg-red-100 text-red-800' :
-        //                     submission.status === 'review' ? 'bg-yellow-100 text-yellow-800' :
-        //                     'bg-green-100 text-green-800'
-        //                   }`}>
-        //                     {submission.status}
-        //                   </span>
-        //                 </td>
-        //                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-        //                   <button className="text-green-600 hover:text-green-900 mr-3">
-        //                     <Eye className="w-4 h-4" />
-        //                   </button>
-        //                   <button className="text-gray-600 hover:text-gray-900">
-        //                     <MoreVertical className="w-4 h-4" />
-        //                   </button>
-        //                 </td>
-        //               </tr>
-        //             ))}
-        //           </tbody>
-        //         </table>
-        //       </div>
-        //     </div>
-        //   </div>
-        // );
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paper</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Author</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conference</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Risk</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plagiarism</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {[
+                      { id: 1, title: "Advanced Neural Networks", author: "Dr. Smith", conference: "ICML 2024", aiRisk: 92, plagiarism: 5, status: "flagged" },
+                      { id: 2, title: "Quantum Computing Methods", author: "Prof. Johnson", conference: "AAAI 2024", aiRisk: 15, plagiarism: 12, status: "clean" },
+                      { id: 3, title: "Machine Learning Ethics", author: "Dr. Williams", conference: "NeurIPS 2024", aiRisk: 67, plagiarism: 3, status: "review" },
+                      { id: 4, title: "Computer Vision Applications", author: "Prof. Davis", conference: "ICCV 2024", aiRisk: 8, plagiarism: 45, status: "flagged" }
+                    ].map((submission) => (
+                      <tr key={submission.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-medium text-gray-900">{submission.title}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {submission.author}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {submission.conference}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm font-medium ${
+                            submission.aiRisk >= 80 ? 'text-red-600' :
+                            submission.aiRisk >= 50 ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`}>
+                            {submission.aiRisk}%
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm font-medium ${
+                            submission.plagiarism >= 30 ? 'text-red-600' :
+                            submission.plagiarism >= 15 ? 'text-yellow-600' :
+                            'text-green-600'
+                          }`}>
+                            {submission.plagiarism}%
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            submission.status === 'flagged' ? 'bg-red-100 text-red-800' :
+                            submission.status === 'review' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {submission.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-green-600 hover:text-green-900 mr-3">
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button className="text-gray-600 hover:text-gray-900">
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
       
       default:
         return (
@@ -1156,4 +958,4 @@ const PLagioGuardDashboard = () => {
   );
 };
 
-export default PLagioGuardDashboard;
+export default AdminDashboard;

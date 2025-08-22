@@ -5,7 +5,10 @@ import {
   handleSubmissionImmediate, 
   getSubmissionStatus, 
   getSubmissionReport,
-  listSubmissions 
+  listSubmissions, 
+  getAllSubmissions,
+  getStudentProfiles,
+  getAdminStats
 } from "../Controllers/submissionsController.js";
 import Submission from "../modals/Submission.js";
 
@@ -16,7 +19,10 @@ submissionsRouter.post("/", upload.single("file"), handleSubmissionImmediate);
 
 // GET /api/submissions/:id/status -> Check status (for polling)
 submissionsRouter.get("/:id/status", getSubmissionStatus);
-
+// GET /api/submissions/:id/status -> Check status (for polling)
+submissionsRouter.get("/allSub", getAllSubmissions);
+submissionsRouter.get("/getAdminStats", getAdminStats);
+submissionsRouter.get("/studentSub", getStudentProfiles);
 // GET /api/submissions/:id/report -> Get detailed report
 submissionsRouter.get("/:id/report", getSubmissionReport);
 
