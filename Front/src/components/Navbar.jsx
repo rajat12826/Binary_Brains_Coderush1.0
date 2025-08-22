@@ -43,7 +43,8 @@ const Navbar = () => {
             >
               About Us
             </a>
-            <Button className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-green-700 transition-all duration-200">
+            <Button className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-green-700 transition-all duration-200" 
+            onClick={() => window.location.href = "/dashboard"}>
               Get Started
             </Button>
           </div>
@@ -116,7 +117,10 @@ const Navbar = () => {
 
               <Button
                 className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg font-medium hover:from-emerald-600 hover:to-green-700 transition-all duration-200"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                  window.location.href = "/dashboard"
+                }}
               >
                 Get Started
               </Button>
