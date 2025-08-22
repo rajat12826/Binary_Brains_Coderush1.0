@@ -1,6 +1,6 @@
 // src/routes/submissions.js
 import express from "express";
-import axios from "axios";
+import axios from "axios"
 import { upload } from "../middleware/multer.js";
 import { 
   handleSubmissionImmediate, 
@@ -227,32 +227,77 @@ submissionsRouter.get("/user/:id", async (req, res) => {
 //   }
 // });
 
-submissionsRouter.get('/download/:id', async (req, res) => {
+// Step 1: Add this debug route to your router to check submission data
+submissionsRouter.get('/debug/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const submission = await Submission.findById(id);
-    if (!submission) return res.status(404).json({ message: "Submission not found" });
-
-    if (!submission.fileUrl) {
-      return res.status(400).json({ message: "No file uploaded for this submission" });
+    console.log('=== DEBUG SUBMISSION ===');
+    console.log('Requested ID:', req.params.id);
+    
+    const submission = await Submission.findById(req.params.id);
+    
+    if (!submission) {
+      console.log('❌ Submission not found');
+      return res.json({
+        found: false,
+        id: req.params.id,
+        message: 'Submission not found in database'
+      });
     }
 
-    // Stream the Cloudinary file
-    const cloudResponse = await axios.get(submission.fileUrl, { responseType: "stream" });
+    console.log('✅ Submission found');
+    console.log('Title:', submission.title);
+    console.log('FileURL exists:', !!submission.fileUrl);
+    console.log('FileURL value:', submission.fileUrl);
 
-    // Set headers to make the browser download it
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${submission.title || "document"}.pdf"`
-    );
-    res.setHeader("Content-Type", "application/pdf");
+    res.json({
+      found: true,
+      submission: {
+        id: submission._id,
+        title: submission.title,
+        userId: submission.userId,
+        hasFileUrl: !!submission.fileUrl,
+        fileUrl: submission.fileUrl,
+        createdAt: submission.createdAt,
+        updatedAt: submission.updatedAt
+      },
+      debug: {
+        fileUrlType: typeof submission.fileUrl,
+        fileUrlLength: submission.fileUrl?.length || 0,
+        isValidUrl: submission.fileUrl?.startsWith('http') || false
+      }
+    });
 
-    cloudResponse.data.pipe(res);
+  } catch (err) {
+    console.error('❌ Debug route error:', err);
+    res.status(500).json({
+      error: 'Debug failed',
+      message: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  }
+});
 
-  } catch (error) {
-    console.error("Download error:", error.message);
-    res.status(500).json({ message: "Server error while downloading file" });
+// Step 2: Enhanced download route with extensive logging
+submissionsRouter.get('/download/:id', async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission || !submission.fileUrl) {
+      return res.status(404).send('File not found');
+    }
+
+    // Stream the file from Cloudinary
+    const response = await axios.get(submission.fileUrl, { responseType: 'stream' });
+
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${submission.title}.pdf"`);
+
+    // Pipe to client
+    response.data.pipe(res);
+
+  } catch (err) {
+    console.error('Download error:', err.message);
+    res.status(500).send('Server error while downloading PDF');
   }
 }
 );

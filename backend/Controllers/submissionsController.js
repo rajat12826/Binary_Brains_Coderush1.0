@@ -57,6 +57,7 @@ class DocumentAnalyzer {
     
     return Math.round(entropy * 100) / 100;
   }
+  
 
   // Stylometric analysis
   static analyzeStyle(text) {
@@ -83,6 +84,7 @@ class DocumentAnalyzer {
       consistencyScore: Math.round(consistencyScore * 100) / 100
     };
   }
+  
 
   // Enhanced AI detection with more comprehensive patterns
   static detectAI(text) {
@@ -286,6 +288,26 @@ Recommendation must be one of: HUMAN_WRITTEN, POSSIBLY_AI, LIKELY_AI, AI_GENERAT
     return numbers.reduce((sum, num) => sum + Math.pow(num - mean, 2), 0) / numbers.length;
   }
 }
+
+const getAuthorStats = async (userId) => {
+  const submissions = await Submission.find({ userId });
+
+  const total = submissions.length;
+  const underReview = submissions.filter(s => s.status === "underReview").length;
+  const accepted = submissions.filter(s => s.status === "accepted").length;
+  const avgScore =
+    submissions.length > 0
+      ? (submissions.reduce((sum, s) => sum + (s.reviewScore || 0), 0) / submissions.length).toFixed(1)
+      : 0;
+
+  return {
+    submissions: total,
+    underReview,
+    accepted,
+    avgScore
+  };
+};
+
 
 /**
  * Extract text from PDF
