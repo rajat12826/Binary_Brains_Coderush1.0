@@ -26,10 +26,10 @@ const App = () => {
       <Route
         path="/dashboard"
         element={
-        //   <ProtectedRoute>
-        //     
-        // </ProtectedRoute>
-        <PLagioGuardDashboard />
+          <ProtectedRoute>
+         <PLagioGuardDashboard /> 
+         </ProtectedRoute>
+       
         }
       />
     </Routes>
