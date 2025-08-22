@@ -18,20 +18,31 @@ export default function UploadDialog() {
     setFile(e.target.files[0] || null);
   };
 
-  const handleUpload = () => {
-    if (!file) return;
-    console.log("Uploading file:", file);
-    try {
-     const res= axios.post("http://localhost:8000/api/submissions", { file });
-     if(res.data.success){
-      console.log(res.data.message)
-     }
-    } catch (error) {
-      console.error("Error uploading file:", error);
+  const handleUpload = async () => {
+  if (!file) return;
+
+  console.log("Uploading file:", file);
+
+  const formData = new FormData();
+  formData.append("file", file); // must match upload.single("file")
+  formData.append("userId", "test-user-123"); // optional, add extra fields
+  formData.append("title", file.name);
+
+  try {
+    const res = await axios.post("http://localhost:8000/api/submissions", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    if (res.data.success) {
+      console.log("✅ Upload success:", res.data.message);
     }
-    // Add your backend upload logic here
-    setFile(null);
-  };
+  } catch (error) {
+    console.error("❌ Error uploading file:", error.response?.data || error.message);
+  }
+
+  setFile(null);
+};
+
 
   return (
     <Dialog>
