@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-// Remove Clerk import to resolve build errors
-// import { useSignIn } from "@clerk/clerk-react";
 import {
   Eye,
   EyeOff,
@@ -15,42 +13,35 @@ import {
 } from "lucide-react";
 import Navbar from "./Navbar";
 
-export default function LoginPage() {
-  // Remove Clerk hooks
-  // const { isLoaded, signIn, setActive } = useSignIn();
+import { useSignIn } from "@clerk/clerk-react";
 
-  // form state
+export default function LoginPage() {
+  const { isLoaded, signIn, setActive } = useSignIn();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  // ui state
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailValid, setEmailValid] = useState(false);
-  const [emailTouched, setEmailTouched] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showAccountNotFound, setShowAccountNotFound] = useState(false);
+const [emailTouched, setEmailTouched] = useState(false);
+const [emailValid, setEmailValid] = useState(false);
 
-  // validators
+
   const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
 
-  const handleEmailChange = (val) => {
-    setEmail(val);
-    setEmailTouched(true);
-    setEmailValid(validateEmail(val));
-    // Reset error states when user starts typing
-    if (errorMessage || showAccountNotFound) {
-      setErrorMessage("");
-      setShowAccountNotFound(false);
-    }
-  };
+ const handleEmailChange = (val) => {
+  setEmail(val);
+  setEmailTouched(true);        // mark as touched
+  setEmailValid(validateEmail(val)); // validate on change
+  setErrorMessage("");
+  setShowAccountNotFound(false);
+};
 
   const handleSubmit = async () => {
-    
-    // Remove isLoaded check since we're not using Clerk
-    // if (!isLoaded) return;
+    if (!isLoaded) return; // wait for Clerk
 
-    if (!emailValid) {
+    if (!validateEmail(email)) {
       setErrorMessage("Please enter a valid email address.");
       return;
     }
@@ -64,8 +55,6 @@ export default function LoginPage() {
     setShowAccountNotFound(false);
 
     try {
-      // CLERK INTEGRATION: Replace this with actual Clerk signin
-      /*
       const result = await signIn.create({
         identifier: email,
         password,
@@ -73,46 +62,25 @@ export default function LoginPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        window.location.href = "/dashboard"; // redirect
+        window.location.href = "/dashboard"; // redirect to dashboard
       } else {
-        console.log(result);
-        setErrorMessage("Additional steps required. Please check your email.");
+        // e.g., requires email verification or 2FA
+        setErrorMessage(
+          "Additional steps required. Please check your email."
+        );
       }
-      */
-
-      // Simulate the signin attempt
-      console.log('Attempting signin with:', { email, password });
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-
-      // Simulate the "account not found" error that you're experiencing
-      // This is what happens when someone tries to sign in before completing signup
-      const simulateAccountNotFound = true; // Change this to false to simulate successful login
-      
-      if (simulateAccountNotFound) {
-        throw {
-          errors: [{
-            code: "form_identifier_not_found",
-            message: "Couldn't find your account."
-          }]
-        };
-      }
-
-      // If successful, redirect to dashboard
-      console.log('Login successful!');
-      // window.location.href = "/dashboard";
-
     } catch (err) {
       console.error("Login error:", err);
-      
-      // Handle specific Clerk errors
+
       if (err.errors) {
-        const hasAccountNotFound = err.errors.some(error => 
-          error.code === "form_identifier_not_found"
+        const accountNotFound = err.errors.some(
+          (e) => e.code === "form_identifier_not_found"
         );
-        
-        if (hasAccountNotFound) {
+        if (accountNotFound) {
           setShowAccountNotFound(true);
-          setErrorMessage("Account not found. You may need to complete your signup first.");
+          setErrorMessage(
+            "Account not found. You may need to complete your signup first."
+          );
         } else {
           setErrorMessage(err.errors.map((e) => e.message).join(", "));
         }
@@ -124,16 +92,11 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoToSignup = () => {
-    // Redirect to signup page with the email prefilled
-    window.location.href = `/signup?email=${encodeURIComponent(email)}`;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-black flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Branding */}
-        <Navbar/>
+        <Navbar />
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
             <Shield className="w-8 h-8 text-green-600 dark:text-green-400" />
@@ -141,13 +104,11 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             PlagioGuard
           </h1>
-         
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">
             AI-Powered Research Security
           </p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-white dark:bg-gray-800 shadow-xl rounded-3xl p-8">
           <h2 className="text-2xl font-semibold text-center mb-6 text-gray-900 dark:text-white">
             Sign In
@@ -228,8 +189,7 @@ export default function LoginPage() {
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errorMessage}
                 </p>
-                
-                {/* Account Not Found Helper */}
+
                 {showAccountNotFound && (
                   <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                     <div className="flex items-start space-x-3">
@@ -239,7 +199,7 @@ export default function LoginPage() {
                           Need to create an account?
                         </h4>
                         <p className="text-sm text-green-600 dark:text-green-300 mb-3">
-                          It looks like you haven't completed your account setup yet. You may need to finish the signup process or verify your email.
+                          It looks like you haven't completed your account setup yet.
                         </p>
                         <button
                           type="button"
@@ -273,7 +233,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Forgot Password */}
           <div className="text-center mt-4">
             <a
               href="/forgot-password"
@@ -283,7 +242,6 @@ export default function LoginPage() {
             </a>
           </div>
 
-          {/* Footer */}
           <div className="text-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Don't have an account?{" "}
@@ -297,7 +255,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Additional Help */}
         <div className="text-center mt-6">
           <p className="text-xs text-gray-500 dark:text-gray-400">
             Having trouble signing in?{" "}
