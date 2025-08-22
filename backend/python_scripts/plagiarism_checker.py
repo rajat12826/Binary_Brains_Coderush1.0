@@ -5,6 +5,10 @@ import json
 import torch
 import numpy as np
 import re
+import requests
+import tempfile
+import os
+import pdfplumber
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast, AutoTokenizer, AutoModelForSequenceClassification
 from docx import Document
 from langdetect import detect
@@ -23,7 +27,9 @@ longformer_model = AutoModelForSequenceClassification.from_pretrained(longformer
 # Functions
 # ---------------------------
 def compute_perplexity(text):
-    encodings = gpt2_tokenizer(text, return_tensors="pt")
+    if not text.strip():
+        return 0
+    encodings = gpt2_tokenizer(text, return_tensors="pt", truncation=True)
     max_length = gpt2_model.config.n_positions
     stride = 512
     lls = []
@@ -46,17 +52,21 @@ def compute_perplexity(text):
     return ppl.item()
 
 def compute_entropy(text):
-    inputs = gpt2_tokenizer(text, return_tensors="pt")
+    if not text.strip():
+        return 0
+    inputs = gpt2_tokenizer(text, return_tensors="pt", truncation=True)
     input_ids = inputs.input_ids
     with torch.no_grad():
         logits = gpt2_model(input_ids).logits
         probs = torch.softmax(logits, dim=-1)
     entropy_per_token = -torch.sum(probs * torch.log(probs + 1e-10), dim=-1)
     avg_entropy = entropy_per_token.mean().item()
-    watermark_score = max(0, min(100, 100 - avg_entropy*4))
+    watermark_score = max(0, min(100, 100 - avg_entropy * 4))
     return watermark_score
 
 def detect_plagiarism(chunk):
+    if not chunk.strip():
+        return 0
     inputs = longformer_tokenizer(chunk, return_tensors="pt", truncation=True, padding=True)
     with torch.no_grad():
         logits = longformer_model(**inputs).logits
@@ -64,6 +74,8 @@ def detect_plagiarism(chunk):
     return predicted_class  # 0 = not plagiarised, 1 = plagiarised
 
 def stylometric_fingerprint(text, keywords=None):
+    if not text.strip():
+        return {}
     lines = [line for line in text.split("\n") if line.strip() != ""]
     sentences = re.split(r'[.!?]+', text)
     sentences = [s.strip() for s in sentences if s.strip() != ""]
@@ -92,23 +104,54 @@ def stylometric_fingerprint(text, keywords=None):
 # ---------------------------
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print(json.dumps({"error": "Usage: python plagiarism_checker.py <filePath> <submissionId>"}))
+        print(json.dumps({"error": "Usage: python plagiarism_checker.py <fileUrl> <submissionId>"}))
         sys.exit(1)
 
-    file_path = sys.argv[1]
+    file_url = sys.argv[1]
     submission_id = sys.argv[2]
 
-    # ---------------------------
-    # Read file
-    # ---------------------------
-    if file_path.endswith(".txt"):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            text = f.read()
-    elif file_path.endswith(".docx"):
-        doc = Document(file_path)
-        text = "\n".join([para.text for para in doc.paragraphs])
-    else:
-        text = ""  # fallback
+    text = ""
+
+    try:
+        # download file from Cloudinary to a temp file
+        response = requests.get(file_url)
+        response.raise_for_status()
+
+        suffix = ""
+        if ".docx" in file_url.lower():
+            suffix = ".docx"
+        elif ".txt" in file_url.lower():
+            suffix = ".txt"
+        elif ".pdf" in file_url.lower():
+            suffix = ".pdf"
+        else:
+            suffix = ".bin"  # fallback
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            tmp_file.write(response.content)
+            tmp_path = tmp_file.name
+
+        # ---------------------------
+        # Extract text depending on file type
+        # ---------------------------
+        if tmp_path.endswith(".txt"):
+            with open(tmp_path, "r", encoding="utf-8") as f:
+                text = f.read()
+        elif tmp_path.endswith(".docx"):
+            doc = Document(tmp_path)
+            text = "\n".join([para.text for para in doc.paragraphs])
+        elif tmp_path.endswith(".pdf"):
+            with pdfplumber.open(tmp_path) as pdf:
+                text = "\n".join([page.extract_text() or "" for page in pdf.pages])
+        else:
+            text = ""
+
+    except Exception as e:
+        print(json.dumps({"error": f"Failed to fetch or parse file: {str(e)}"}))
+        sys.exit(1)
+    finally:
+        if "tmp_path" in locals() and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
     # ---------------------------
     # Split & run analysis
@@ -133,7 +176,7 @@ if __name__ == "__main__":
     result = {
         "submissionId": submission_id,
         "plagiarismScore": plag_percentage / 100,   # normalized 0–1
-        "sources": [],  # placeholder — you can expand with source matching logic
+        "sources": [],
         "rephrasedDetected": False,
         "aiLikelihood": ai_percentage / 100,        # normalized 0–1
         "entropy": watermark_percentage,
