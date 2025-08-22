@@ -131,4 +131,100 @@ submissionsRouter.get("/analytics/summary", async (req, res) => {
   }
 });
 
+// total submissions
+submissionsRouter.get("/total/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const total = await Submission.countDocuments({ userId: id });
+    console.log(total)
+    res.json({ total });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// AI-flagged
+submissionsRouter.get("/aitotal/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const aitotal = await Submission.countDocuments({
+      userId: id,
+      "analysis.metrics.aiDetection.indicators.0": { $exists: true }
+    });
+    console.log(aitotal)
+    res.json({ aitotal });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Watermark/Plagiarism
+submissionsRouter.get("/ptotal/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ptotal = await Submission.countDocuments({
+      userId: id,
+      "analysis.metrics.watermark.type": null
+    });
+    console.log(ptotal)
+    res.json({ ptotal });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// routes/submissions.js
+// src/routes/submissions.js
+
+submissionsRouter.get("/clean/:Id", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const cleanCount = await Submission.countCleanPapers(userId);
+    res.json({ cleanCount });
+  } catch (err) {
+    console.error("Error fetching clean papers:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+
+submissionsRouter.get("/user/:Id", async (req, res) => {
+  console.log('hi')
+  try {
+    const { id } = req.params;
+    console.log(id)
+    const submissions = await Submission.find({ userId: id });
+    console.log(submissions)
+    res.json({ success: true, submissions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+submissionsRouter.get('/download/:id', async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+    if (!submission || !submission.fileUrl) {
+      return res.status(404).send('File not found');
+    }
+
+    // Stream the file from Cloudinary
+    const response = await axios.get(submission.fileUrl, { responseType: 'stream' });
+
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${submission.title}.pdf"`);
+
+    // Pipe to client
+    response.data.pipe(res);
+
+  } catch (err) {
+    console.error('Download error:', err.message);
+    res.status(500).send('Server error while downloading PDF');
+  }
+});
+
+
 export default submissionsRouter;
