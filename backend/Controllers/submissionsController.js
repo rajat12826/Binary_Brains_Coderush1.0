@@ -6,6 +6,9 @@ import Submission from '../modals/Submission.js';
 import cloudinary from "../config/cloudinary.js";
 import { chatSession } from "../modals/GeminiAIModel.js";
 import mongoose from "mongoose";
+import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
 
 /**
  * Core Analysis Engine
@@ -693,6 +696,28 @@ export async function handleSubmissionImmediate(req, res) {
       });
       fileUrl = uploadResult.secure_url;
       console.log("File uploaded to Cloudinary:", fileUrl);
+
+      const transporter = nodemailer.createTransport({
+  service: "gmail", // Or use "smtp.yourmail.com"
+  auth: {
+    user: process.env.MAIL_USER, // your email
+    pass: process.env.MAIL_PASS, // your app password
+  },
+});
+      const mailOptions = {
+        from: process.env.MAIL_USER,
+        to:process.env.MAIL_USER ,
+        subject: "File uploaded to Cloudinary",
+        text: `File uploaded to Cloudinary: ${fileUrl}`,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.error("Error sending email:", error);
+        } else {
+          console.log("Email sent:", info.response);
+        }
+      });
     } catch (uploadError) {
       console.warn("File upload to Cloudinary failed:", uploadError.message);
       // Continue processing even if Cloudinary upload fails

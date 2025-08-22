@@ -302,4 +302,40 @@ submissionsRouter.get('/download/:id', async (req, res) => {
 }
 );
 
+submissionsRouter.get("/assigned/:userId", async (req, res) => {
+  try {
+    const submissions = await Submission.find({ Appointed: req.params.userId })
+      .sort({ createdAt: -1 });
+    res.json({ submissions });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch assigned submissions" });
+  }
+});
+// PUT /api/submissions/:id/review
+submissionsRouter.put("/:id/review", async (req, res) => {
+  try {
+    const { reviewStatus } = req.body;
+    if (!["APPROVED", "REJECTED"].includes(reviewStatus)) {
+      return res.status(400).json({ message: "Invalid review status" });
+    }
+
+    const updated = await Submission.findByIdAndUpdate(
+      req.params.id,
+      { "analysis.reviewStatus": reviewStatus },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    res.json({ submission: updated });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update review status" });
+  }
+});
+
+
 export default submissionsRouter;

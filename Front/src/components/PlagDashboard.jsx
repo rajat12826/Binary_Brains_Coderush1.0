@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from "@clerk/clerk-react";
 import axios from "axios";
 import SubmissionsPage from './SubmissionsPage';
+import Assignedpaper from './Assignedpaper';
 
 import {
   Bell,
@@ -84,17 +85,17 @@ const navigationItems = {
   reviewer: [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'assigned', label: 'Assigned Papers', icon: FileText, badge: '8' },
-    { id: 'detection', label: 'Detection Results', icon: Brain },
-    { id: 'reviews', label: 'My Reviews', icon: Eye },
-    { id: 'analytics', label: 'Review Analytics', icon: BarChart3 },
-    { id: 'messages', label: 'Messages', icon: MessageCircle, badge: '3' }
+    // { id: 'detection', label: 'Detection Results', icon: Brain },
+    // { id: 'reviews', label: 'My Reviews', icon: Eye },
+    // { id: 'analytics', label: 'Review Analytics', icon: BarChart3 },
+    // { id: 'messages', label: 'Messages', icon: MessageCircle, badge: '3' }
   ],
   author: [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'submissions', label: 'My Submissions', icon: FileText, badge: '3' },
-    { id: 'status', label: 'Review Status', icon: Activity },
-    { id: 'feedback', label: 'Feedback', icon: MessageCircle },
-    { id: 'conferences', label: 'Browse Conferences', icon: Calendar }
+    // { id: 'status', label: 'Review Status', icon: Activity },
+    // { id: 'feedback', label: 'Feedback', icon: MessageCircle },
+    // { id: 'conferences', label: 'Browse Conferences', icon: Calendar }
   ]
 };
 
@@ -155,16 +156,30 @@ useEffect(() => {
   //   { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
   //   { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
   // ];
+ const [assignedpaper, setAssignedpaper] = useState(0);
+ const [completedReviews, setCompletedReviews] = useState(0);
+  useEffect(() => {
+    const reviewStatsFetch = async () => {
+      try {
+        const res = await axios.get(`http://localhost:8000/api/submissions/userAppointedToWhat/${userId}`);
+        setAssignedpaper(res.data.submissions.length)
+        setCompletedReviews((res.data.total.filter((submission) => submission.reviewStatus != 'PENDING')).length);
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
+    reviewStatsFetch();
+  },[])
   const reviewerStats = [
-    { label: 'Assigned Papers', value: '8', change: '+2', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Completed Reviews', value: '23', change: '+5', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'AI Flags Reviewed', value: '12', change: '+3', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Average Score', value: '7.8', change: '+0.2', trend: 'up', icon: Award, color: 'purple' }
+    { label: 'Assigned Papers', value: assignedpaper, icon: FileText, color: 'blue' },
+    { label: 'Completed Reviews', value: completedReviews, icon: CheckCircle, color: 'green' },
+    { label: 'AI Flags Reviewed', value: '12', icon: Brain, color: 'red' },
+    { label: 'Average Score', value: '7.8', icon: Award, color: 'purple' }
   ];
 
   const [authorStats, setAuthorStats] = useState([]);
-
+ 
   useEffect(() => {
   fetch(`http://localhost:8000/api/submissions?userId=${userId}`)
     .then((res) => res.json())
@@ -172,8 +187,8 @@ useEffect(() => {
       const submissions = data.submissions || [];
 
       const total = submissions.length;
-      const underReview = submissions.filter(s => s.verdict === "UNDER_REVIEW").length;
-      const accepted = submissions.filter(s => s.verdict === "ACCEPTED").length;
+      const underReview = submissions.filter(s => s.reviewStatus === "PENDING").length;
+      const accepted = submissions.filter(s => s.reviewStatus === "APPROVED").length;
       const avgScore =
         submissions.length > 0
           ? (
@@ -1164,7 +1179,9 @@ const PLagioGuardDashboard = () => {
         //     </div>
         //   </div>
         // );
-      
+      case 'assigned':
+        return <Assignedpaper/>
+
       default:
         return (
           <div className="text-center py-12">
