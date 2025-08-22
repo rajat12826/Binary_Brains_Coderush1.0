@@ -22,7 +22,7 @@ export default function UploadDialog() {
     if (!file) return;
     console.log("Uploading file:", file);
     try {
-     const res= axios.post("/api/submissions", { file });
+     const res= axios.post("http://localhost:8000/api/submissions", { file });
      if(res.data.success){
       console.log(res.data.message)
      }
