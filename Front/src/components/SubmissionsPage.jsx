@@ -2,10 +2,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Eye, MoreVertical, Filter } from "lucide-react";
 import BulkUploadDialog from "./BulkUploadDialog";
+import { useUser } from "@clerk/clerk-react";
 
-const SubmissionsPage = ({ user }) => {
+const SubmissionsPage = () => {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const{user}=useUser();
+console.log(user?.id,"Sss");
 
   // Fetch submissions for the current user
   useEffect(() => {

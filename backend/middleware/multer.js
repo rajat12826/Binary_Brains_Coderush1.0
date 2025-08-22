@@ -1,18 +1,10 @@
 // src/config/multer.js
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary"; // ✅ IMPORTANT
-import cloudinary from "../config/cloudinary.js"; // your Cloudinary config
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary.js";
 
-// Cloudinary storage for PDFs/DOCX/ZIP
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "submissions",
-    resource_type: "raw", // for PDFs/DOCX/ZIP
-    public_id: (req, file) => Date.now() + "_" + file.originalname,
-    access_mode: "public",
-  },
-});
+// Memory storage for processing
+const memoryStorage = multer.memoryStorage();
 
 function fileFilter(req, file, cb) {
   const allowed = [
@@ -26,4 +18,33 @@ function fileFilter(req, file, cb) {
   cb(null, true);
 }
 
-export const upload = multer({ storage, fileFilter });
+// Use memory storage - we'll upload to Cloudinary manually in the controller
+export const upload = multer({ 
+  storage: memoryStorage,
+  fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
+
+// Helper function to upload buffer to Cloudinary manually
+export const uploadBufferToCloudinary = (buffer, filename) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "raw",
+        folder: "submissions",
+        public_id: `${Date.now()}_${filename}`,
+        access_mode: "public",
+      },
+      (error, result) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+    uploadStream.end(buffer);
+  });
+};

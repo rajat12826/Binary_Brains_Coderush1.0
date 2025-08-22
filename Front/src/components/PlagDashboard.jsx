@@ -1047,7 +1047,7 @@ const PLagioGuardDashboard = () => {
         return <StylemetricPanel />;
         
       case 'submissions':
-  return <SubmissionsPage user={user} />;
+  return <SubmissionsPage  />;
 
         // return (
         //   <div className="space-y-6">

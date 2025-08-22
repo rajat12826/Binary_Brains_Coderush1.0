@@ -291,22 +291,46 @@ Recommendation must be one of: HUMAN_WRITTEN, POSSIBLY_AI, LIKELY_AI, AI_GENERAT
  * Extract text from PDF
  */
 async function extractTextFromPDF(buffer) {
+  // FIXED: Add validation for buffer
+  if (!buffer || !(buffer instanceof Buffer)) {
+    throw new Error("Invalid buffer provided for PDF extraction");
+  }
+
   const tempPath = `./temp/temp_${Date.now()}.pdf`;
-  await fs.mkdir('./temp', { recursive: true });
-  await fs.writeFile(tempPath, buffer);
   
   try {
+    // Ensure temp directory exists
+    await fs.mkdir('./temp', { recursive: true });
+    
+    // Write the buffer to a temporary file
+    await fs.writeFile(tempPath, buffer);
+    
+    console.log(`PDF written to temp file: ${tempPath}`);
+    
+    // Extract text from PDF
     const text = await new Promise((resolve, reject) => {
       pdf.pdfToText(tempPath, { layout: "maintain" }, (err, data) => {
-        if (err) reject(err);
-        else resolve(data);
+        if (err) {
+          console.error("PDF extraction error:", err);
+          reject(err);
+        } else {
+          console.log("PDF text extracted successfully");
+          resolve(data);
+        }
       });
     });
     
+    // Clean up temp file
     await fs.unlink(tempPath);
     return text;
+    
   } catch (error) {
-    await fs.unlink(tempPath).catch(() => {});
+    // Ensure temp file cleanup even on error
+    try {
+      await fs.unlink(tempPath);
+    } catch (cleanupError) {
+      console.warn("Failed to cleanup temp file:", cleanupError.message);
+    }
     throw error;
   }
 }
@@ -319,24 +343,58 @@ function generateContentHash(text) {
 }
 
 /**
- * Main submission handler (Enhanced with Gemini AI) - FIXED userId handling
+ * Main submission handler (Enhanced with Gemini AI) - FIXED buffer handling
  */
 export async function handleSubmissionImmediate(req, res) {
   const startTime = Date.now();
   
   try {
-    // FIXED: Proper userId extraction and validation
+    console.log("=== SUBMISSION DEBUG INFO ===");
+    console.log("Request body keys:", Object.keys(req.body));
+    console.log("Request file:", req.file ? 'Present' : 'Missing');
+    
+    if (req.file) {
+      console.log("File details:");
+      console.log("- originalname:", req.file.originalname);
+      console.log("- mimetype:", req.file.mimetype);
+      console.log("- size:", req.file.size);
+      console.log("- buffer type:", typeof req.file.buffer);
+      console.log("- buffer is Buffer:", req.file.buffer instanceof Buffer);
+      console.log("- buffer length:", req.file.buffer ? req.file.buffer.length : 'N/A');
+    }
+    
+    // FIXED: Enhanced validation and debugging
     const { title = "Untitled Document", description = "", userId } = req.body;
     
     // Validate required fields
     if (!req.file) {
+      console.error("No file in request");
       return res.status(400).json({ 
         success: false,
-        error: "No PDF file provided" 
+        error: "No PDF file provided",
+        debug: "req.file is missing" 
       });
     }
 
-    // FIXED: Validate userId is provided
+    if (!req.file.buffer) {
+      console.error("File buffer is missing");
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid file upload - no buffer",
+        debug: "req.file.buffer is missing" 
+      });
+    }
+
+    if (!(req.file.buffer instanceof Buffer)) {
+      console.error("File buffer is not a Buffer instance");
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid file buffer type",
+        debug: `Buffer type is: ${typeof req.file.buffer}` 
+      });
+    }
+
+    // Validate userId is provided
     if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
       return res.status(400).json({ 
         success: false,
@@ -346,13 +404,27 @@ export async function handleSubmissionImmediate(req, res) {
 
     console.log(`Starting analysis for: ${title} (User: ${userId})`);
     
-    // Extract text from PDF
-    const extractedText = await extractTextFromPDF(req.file.buffer);
-    
-    if (!extractedText || extractedText.trim().length < 50) {
+    // Extract text from PDF with enhanced error handling
+    let extractedText;
+    try {
+      extractedText = await extractTextFromPDF(req.file.buffer);
+      console.log("Text extraction successful, length:", extractedText.length);
+    } catch (extractionError) {
+      console.error("PDF text extraction failed:", extractionError);
       return res.status(400).json({
         success: false,
-        error: "Could not extract sufficient text from PDF"
+        error: "Failed to extract text from PDF",
+        details: extractionError.message,
+        debug: "PDF processing failed"
+      });
+    }
+    
+    if (!extractedText || extractedText.trim().length < 50) {
+      console.warn("Extracted text too short:", extractedText?.length || 0);
+      return res.status(400).json({
+        success: false,
+        error: "Could not extract sufficient text from PDF",
+        debug: `Extracted text length: ${extractedText?.length || 0}`
       });
     }
 
@@ -578,7 +650,7 @@ export async function handleSubmissionImmediate(req, res) {
       geminiStatus: geminiResult.success ? "SUCCESS" : "FAILED"
     };
 
-    // Upload to cloudinary (optional, for record keeping)
+    // Upload to cloudinary (for permanent storage)
     let fileUrl = null;
     try {
       const uploadResult = await new Promise((resolve, reject) => {
@@ -586,7 +658,8 @@ export async function handleSubmissionImmediate(req, res) {
           {
             resource_type: "raw",
             folder: "submissions",
-            public_id: `doc_${Date.now()}`
+            public_id: `doc_${Date.now()}_${req.file.originalname || 'document'}`,
+            access_mode: "public"
           },
           (error, result) => {
             if (error) reject(error);
@@ -596,11 +669,13 @@ export async function handleSubmissionImmediate(req, res) {
         uploadStream.end(req.file.buffer);
       });
       fileUrl = uploadResult.secure_url;
+      console.log("File uploaded to Cloudinary:", fileUrl);
     } catch (uploadError) {
-      console.warn("File upload failed:", uploadError.message);
+      console.warn("File upload to Cloudinary failed:", uploadError.message);
+      // Continue processing even if Cloudinary upload fails
     }
 
-    // FIXED: Save to database with proper userId handling
+    // Save to database with proper userId handling
     console.log(`Saving submission for user: ${userId}`);
     
     const submission = await Submission.create({
@@ -687,12 +762,18 @@ export async function handleSubmissionImmediate(req, res) {
 
   } catch (error) {
     console.error("Analysis failed:", error);
+    console.error("Error stack:", error.stack);
     
     res.status(500).json({
       success: false,
       error: "Document processing failed",
       code: "PROCESSING_ERROR",
-      details: error.message
+      details: error.message,
+      debug: {
+        hasFile: !!req.file,
+        hasBuffer: !!(req.file && req.file.buffer),
+        bufferType: req.file ? typeof req.file.buffer : 'N/A'
+      }
     });
   }
 }
@@ -912,10 +993,6 @@ export async function listSubmissions(req, res) {
   }
 }
 
-
-
-
-
 export async function getAdminStats(req, res) {
   try {
     const days = 30; // current period
@@ -974,7 +1051,6 @@ export async function getAdminStats(req, res) {
     });
   }
 }
-
 
 export async function getAllSubmissions(req, res) {
   try {
@@ -1042,11 +1118,6 @@ export async function getAllSubmissions(req, res) {
     });
   }
 }
-
-
-
-
-
 
 // GET /api/submissions?limit=10&page=1
 export async function getSubmissions(req, res) {
@@ -1135,5 +1206,3 @@ export async function getStudentProfiles(req, res) {
     res.status(500).json({ success: false, error: "Failed to fetch student profiles" });
   }
 }
-
-
