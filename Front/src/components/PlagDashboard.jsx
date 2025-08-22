@@ -47,6 +47,8 @@ import {
   Tag,
   Flag
 } from 'lucide-react';
+import { UserButton } from '@clerk/clerk-react';
+import ToggleButton from './AnimatedDarkModeToggle';
 
 // Mock data for PLagioGuard system
 const mockUsers = {
@@ -658,14 +660,19 @@ const DashboardLayout = ({ children, user, activeSection, setActiveSection }) =>
                   )}
                 </AnimatePresence>
               </div>
-              
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full ring-2 ring-gray-200" />
-                <div className="hidden sm:block">
-                  <p className="font-medium text-gray-700 text-sm">{user.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-                </div>
-              </div>
+              <div className="flex items-center space-x-3">
+           
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-8 h-8 ring-2 ring-gray-200 dark:ring-gray-700 hover:ring-blue-500 transition-all duration-200"
+                    }
+                  }}
+                />
+                 
+          
+           <ToggleButton/>
+            </div>
             </div>
           </div>
         </header>
