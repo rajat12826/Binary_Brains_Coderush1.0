@@ -468,7 +468,7 @@ const DashboardLayout = ({ children, user, activeSection, setActiveSection }) =>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-2">
               <Shield className="w-8 h-8 text-green-600" />
-              <Link to={'/'} className="text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+              <Link to={'/'} className="text-xl cursor-pointer font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
                 PlagioGuard
               </Link>
             </div>
@@ -521,9 +521,9 @@ const DashboardLayout = ({ children, user, activeSection, setActiveSection }) =>
         <div className="p-6 h-full flex flex-col">
           <div className="flex items-center space-x-2 mb-8">
             <Shield className="w-8 h-8 text-green-600" />
-            <span className="text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-              PlagioGuard Pro
-            </span>
+            <Link  to={'/'} className="text-xl font-bold cursor-pointer bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+              PlagioGuard
+            </Link>
           </div>
           
           <nav className="space-y-1 flex-1">
