@@ -624,6 +624,9 @@ const AdminDashboard = () => {
   const user = mockUsers[currentUser];
   const[sub,setsub]=useState([])
   useEffect(()=>{
+    const user=localStorage.getItem("user")
+    console.log(user);
+    
  async function getAllSub() {
       try {
       // Upload and get immediate analysis
