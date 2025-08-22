@@ -16,7 +16,7 @@ const App = () => {
       {/* Public routes */}
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/sign-up" element={<SignUpPage />} />
-      <Route path="/about-us" element={<ProtectedRoute><AboutPage /></ProtectedRoute>} />
+      <Route path="/about-us" element={<AboutPage />} />
       <Route path="/features" element={<FeaturesPage />} />
       <Route path="/" element={<AcadeMateLanding />} />
 
