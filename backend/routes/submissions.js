@@ -204,6 +204,29 @@ submissionsRouter.get("/user/:id", async (req, res) => {
   }
 });
 
+// submissionsRouter.get('/download/:id', async (req, res) => {
+//   try {
+//     const submission = await Submission.findById(req.params.id);
+//     if (!submission || !submission.fileUrl) {
+//       return res.status(404).send('File not found');
+//     }
+
+//     // Stream the file from Cloudinary
+//     const response = await axios.get(submission.fileUrl, { responseType: 'stream' });
+
+//     // Set headers for PDF download
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', `attachment; filename="${submission.title}.pdf"`);
+
+//     // Pipe to client
+//     response.data.pipe(res);
+
+//   } catch (err) {
+//     console.error('Download error:', err.message);
+//     res.status(500).send('Server error while downloading PDF');
+//   }
+// });
+
 // Step 1: Add this debug route to your router to check submission data
 submissionsRouter.get('/debug/:id', async (req, res) => {
   try {
@@ -256,148 +279,27 @@ submissionsRouter.get('/debug/:id', async (req, res) => {
 
 // Step 2: Enhanced download route with extensive logging
 submissionsRouter.get('/download/:id', async (req, res) => {
-  console.log('\n=== DOWNLOAD REQUEST START ===');
-  console.log('Timestamp:', new Date().toISOString());
-  console.log('Requested ID:', req.params.id);
-  
   try {
-    // Validate ObjectId format
-    if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
-      console.log('❌ Invalid ObjectId format');
-      return res.status(400).send('Invalid submission ID format');
-    }
-
-    // Find submission
-    console.log('🔍 Looking up submission in database...');
     const submission = await Submission.findById(req.params.id);
-    
-    if (!submission) {
-      console.log('❌ Submission not found in database');
-      return res.status(404).send('Submission not found');
-    }
-
-    console.log('✅ Submission found:', {
-      id: submission._id,
-      title: submission.title,
-      hasFileUrl: !!submission.fileUrl
-    });
-
-    if (!submission.fileUrl) {
-      console.log('❌ No fileUrl in submission');
-      return res.status(404).send('File URL not found - file may not have been uploaded to cloud storage');
-    }
-
-    console.log('🔗 FileURL:', submission.fileUrl);
-
-    // Test if URL is accessible
-    console.log('🌐 Testing Cloudinary URL accessibility...');
-    
-    try {
-      // First, try a HEAD request to test if the URL is accessible
-      const headResponse = await axios.head(submission.fileUrl, {
-        timeout: 10000,
-        headers: {
-          'User-Agent': 'PlagioGuard-Server/1.0'
-        }
-      });
-      
-      console.log('✅ HEAD request successful:', {
-        status: headResponse.status,
-        contentType: headResponse.headers['content-type'],
-        contentLength: headResponse.headers['content-length']
-      });
-    } catch (headError) {
-      console.log('❌ HEAD request failed:', {
-        message: headError.message,
-        status: headError.response?.status,
-        statusText: headError.response?.statusText
-      });
-      
-      return res.status(503).send(`File not accessible: ${headError.message}`);
-    }
-
-    // Now try to stream the file
-    console.log('📥 Starting file stream from Cloudinary...');
-    const response = await axios.get(submission.fileUrl, {
-      responseType: 'stream',
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'PlagioGuard-Server/1.0'
-      }
-    });
-
-    console.log('✅ Stream started successfully:', {
-      status: response.status,
-      contentType: response.headers['content-type']
-    });
-
-    // Set download headers
-    const filename = `${submission.title || 'document'}.pdf`;
-    console.log('📄 Setting download headers for:', filename);
-    
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Cache-Control', 'no-cache');
-
-    // Handle stream events
-    response.data.on('error', (streamError) => {
-      console.error('❌ Stream error:', streamError);
-      if (!res.headersSent) {
-        res.status(500).send('Stream error while downloading');
-      }
-    });
-
-    response.data.on('end', () => {
-      console.log('✅ Download completed successfully');
-      console.log('=== DOWNLOAD REQUEST END ===\n');
-    });
-
-    // Pipe to response
-    response.data.pipe(res);
-
-  } catch (error) {
-    console.error('❌ Download error:', {
-      message: error.message,
-      code: error.code,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      url: error.config?.url
-    });
-    console.log('=== DOWNLOAD REQUEST FAILED ===\n');
-
-    if (!res.headersSent) {
-      if (error.code === 'ENOTFOUND') {
-        res.status(503).send('Cloudinary service not reachable');
-      } else if (error.response?.status === 404) {
-        res.status(404).send('File not found in Cloudinary storage');
-      } else if (error.code === 'ECONNABORTED') {
-        res.status(504).send('Download timeout - file too large or connection slow');
-      } else {
-        res.status(500).send(`Server error while downloading PDF: ${error.message}`);
-      }
-    }
-  }
-});
-
-// Step 3: Simple direct redirect route (fallback option)
-submissionsRouter.get('/redirect/:id', async (req, res) => {
-  try {
-    console.log('Direct redirect request for:', req.params.id);
-    
-    const submission = await Submission.findById(req.params.id);
-    
     if (!submission || !submission.fileUrl) {
       return res.status(404).send('File not found');
     }
 
-    console.log('Redirecting to:', submission.fileUrl);
-    res.redirect(submission.fileUrl);
-    
-  } catch (err) {
-    console.error('Redirect error:', err);
-    res.status(500).send('Redirect failed');
-  }
-});
+    // Stream the file from Cloudinary
+    const response = await axios.get(submission.fileUrl, { responseType: 'stream' });
 
+    // Set headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${submission.title}.pdf"`);
+
+    // Pipe to client
+    response.data.pipe(res);
+
+  } catch (err) {
+    console.error('Download error:', err.message);
+    res.status(500).send('Server error while downloading PDF');
+  }
+}
+);
 
 export default submissionsRouter;

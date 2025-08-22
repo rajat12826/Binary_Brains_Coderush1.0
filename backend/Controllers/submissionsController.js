@@ -658,7 +658,8 @@ export async function handleSubmissionImmediate(req, res) {
           {
             resource_type: "raw",
             folder: "submissions",
-            public_id: `doc_${Date.now()}_${req.file.originalname || 'document'}`,
+            // public_id: `doc_${Date.now()}_${req.file.originalname || 'document'}`,
+            public_id: `doc_${Date.now()}`,
             access_mode: "public"
           },
           (error, result) => {

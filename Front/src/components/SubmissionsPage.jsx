@@ -31,7 +31,7 @@ console.log(user?.id,"Sss");
     };
 
     fetchSubmissions();
-  }, [user?.id]);
+  }, [user?.id, setSubmissions]);
 
   if (loading) {
     return (
