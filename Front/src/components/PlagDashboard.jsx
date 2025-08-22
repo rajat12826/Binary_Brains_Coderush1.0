@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { UserButton } from '@clerk/clerk-react';
 import ToggleButton from './AnimatedDarkModeToggle';
+import { Link } from 'react-router-dom';
 
 // Mock data for PLagioGuard system
 const mockUsers = {
@@ -467,9 +468,9 @@ const DashboardLayout = ({ children, user, activeSection, setActiveSection }) =>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-2">
               <Shield className="w-8 h-8 text-green-600" />
-              <span className="text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
-                PlagioGuard Pro
-              </span>
+              <Link to={'/'} className="text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+                PlagioGuard
+              </Link>
             </div>
             <button onClick={() => setSidebarOpen(false)}>
               <X className="w-6 h-6" />
