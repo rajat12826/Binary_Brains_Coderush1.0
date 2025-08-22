@@ -189,13 +189,13 @@ submissionsRouter.get("/clean/:Id", async (req, res) => {
 
 
 
-submissionsRouter.get("/user/:Id", async (req, res) => {
+submissionsRouter.get("/user/:id", async (req, res) => {
   console.log('hi')
   try {
     const { id } = req.params;
-    console.log(id)
+    // console.log(id)
     const submissions = await Submission.find({ userId: id });
-    console.log(submissions)
+    // console.log(submissions)
     res.json({ success: true, submissions });
   } catch (err) {
     console.error(err);
