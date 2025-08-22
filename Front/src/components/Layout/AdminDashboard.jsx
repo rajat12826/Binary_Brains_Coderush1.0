@@ -51,50 +51,36 @@ import {
   Flag
 } from 'lucide-react';
 import { UserButton } from '@clerk/clerk-react';
-import ToggleButton from './AnimatedDarkModeToggle';
+import ToggleButton from '../AnimatedDarkModeToggle';
 import { Link } from 'react-router-dom';
-import BulkUploadDialog from './BulkUploadDialog';
-
+import BulkUploadDialog from '../BulkUploadDialog';
 // Mock data for PLagioGuard system
 const mockUsers = {
- 
-  reviewer: {
-    id: 2,
-    name: "Prof. Michael Rodriguez",
-    email: "m.rodriguez@university.edu", 
-    role: "reviewer",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-    department: "AI Research Lab",
-    expertise: ["Machine Learning", "NLP", "Computer Vision"]
+  admin: {
+    id: 1,
+    name: "Dr. Sarah Chen",
+    email: "sarah.chen@university.edu",
+    role: "admin",
+    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
+    department: "Computer Science",
+    permissions: ["full_access", "system_config", "user_management"]
   },
-  author: {
-    id: 3,
-    name: "Rajat Parihar",
-    email: "alex.thompson@student.edu",
-    role: "author",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    institution: "MIT",
-    submissions: 3
-  }
+ 
 };
 
 const navigationItems = {
- 
-  reviewer: [
+  admin: [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'assigned', label: 'Assigned Papers', icon: FileText, badge: '8' },
-    { id: 'detection', label: 'Detection Results', icon: Brain },
-    { id: 'reviews', label: 'My Reviews', icon: Eye },
-    { id: 'analytics', label: 'Review Analytics', icon: BarChart3 },
-    { id: 'messages', label: 'Messages', icon: MessageCircle, badge: '3' }
+    { id: 'submissions', label: 'Submissions', icon: FileText, badge: '247' },
+    { id: 'detection', label: 'AI Detection', icon: Brain, badge: '12' },
+    { id: 'plagiarism', label: 'Plagiarism Scan', icon: Shield },
+    { id: 'stylometry', label: 'Stylometric Analysis', icon: Fingerprint },
+    { id: 'users', label: 'User Management', icon: Users },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'conferences', label: 'Conferences', icon: Calendar },
+    { id: 'settings', label: 'System Settings', icon: Settings }
   ],
-  author: [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'submissions', label: 'My Submissions', icon: FileText, badge: '3' },
-    { id: 'status', label: 'Review Status', icon: Activity },
-    { id: 'feedback', label: 'Feedback', icon: MessageCircle },
-    { id: 'conferences', label: 'Browse Conferences', icon: Calendar }
-  ]
+
 };
 
 // Dashboard Statistics Component
@@ -119,22 +105,16 @@ const DashboardStats = ({ userRole }) => {
     if (authorId) fetchTotal();
   }, [authorId]);
 
- 
-  const reviewerStats = [
-    { label: 'Assigned Papers', value: '8', change: '+2', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Completed Reviews', value: '23', change: '+5', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'AI Flags Reviewed', value: '12', change: '+3', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Average Score', value: '7.8', change: '+0.2', trend: 'up', icon: Award, color: 'purple' }
+  const adminStats = [
+    { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
+    { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
+    { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
+    { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
   ];
 
-  const authorStats = [
-    { label: 'Submissions', value: '3', change: '+1', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Under Review', value: '2', change: '0', trend: 'neutral', icon: Clock, color: 'yellow' },
-    { label: 'Accepted', value: '1', change: '+1', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'Avg Review Score', value: '8.2', change: '+0.5', trend: 'up', icon: Award, color: 'purple' }
-  ];
 
-  const stats =  userRole === 'reviewer' ? reviewerStats : authorStats;
+
+  const stats =adminStats
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -688,8 +668,8 @@ const DashboardLayout = ({ children, user, activeSection, setActiveSection }) =>
 };
 
 // Main PLagioGuard Dashboard Component
-const PLagioGuardDashboard = () => {
-  const [currentUser, setCurrentUser] = useState('author');
+const AdminDashboard = () => {
+  const [currentUser, setCurrentUser] = useState('admin');
   const [activeSection, setActiveSection] = useState('dashboard');
   const user = mockUsers[currentUser];
 
@@ -703,141 +683,22 @@ const PLagioGuardDashboard = () => {
                 <h1 className="text-2xl font-bold text-gray-900">Conference Management Dashboard</h1>
                 <p className="text-gray-600 mt-1">Advanced AI detection and plagiarism prevention toolkit</p>
               </div>
-              <div className="flex space-x-3">
-                <select 
-                  value={currentUser} 
-                  onChange={(e) => setCurrentUser(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                >
-                  {/* <option value="admin">Admin View</option> */}
-                  <option value="reviewer">Reviewer View</option>
-                  <option value="author">Author View</option>
-                </select>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                  <Plus className="w-4 h-4 inline mr-2" />
-                  New Conference
-                </button>
-              </div>
+            
             </div>
             
             <DashboardStats userRole={currentUser} />
             
-         
-            {currentUser === 'reviewer' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending Reviews</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: "Machine Learning in Healthcare", author: "Dr. Smith", deadline: "3 days", risk: "medium" },
-                      { title: "Quantum Computing Applications", author: "Prof. Johnson", deadline: "5 days", risk: "low" },
-                      { title: "AI Ethics Framework", author: "Dr. Brown", deadline: "1 week", risk: "high" }
-                    ].map((paper, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{paper.title}</h3>
-                          <p className="text-sm text-gray-600">by {paper.author}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm text-gray-500">{paper.deadline} left</div>
-                          <div className={`text-xs px-2 py-1 rounded-full mt-1 ${
-                            paper.risk === 'high' ? 'bg-red-100 text-red-700' :
-                            paper.risk === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {paper.risk} risk
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            {currentUser === 'admin' && (
+              <>
+                <AIDetectionPanel />
+                <div className="mt-8">
+                  <StylemetricPanel />
                 </div>
-                
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Review Analytics</h2>
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Completion Rate</span>
-                        <span className="font-medium">87%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '87%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Average Score Given</span>
-                        <span className="font-medium">7.8/10</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: '78%' }}></div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Response Time</span>
-                        <span className="font-medium">2.3 days avg</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '65%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </>
             )}
             
-            {currentUser === 'author' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">My Submissions</h2>
-                  <div className="space-y-4">
-                    {[
-                      { title: "Deep Learning Optimization", status: "under_review", submitted: "2 weeks ago", conference: "ICML 2024" },
-                      { title: "Neural Network Architecture", status: "accepted", submitted: "1 month ago", conference: "NeurIPS 2024" },
-                      { title: "Computer Vision Methods", status: "revisions_requested", submitted: "3 weeks ago", conference: "ICCV 2024" }
-                    ].map((paper, idx) => (
-                      <div key={idx} className="p-4 border border-gray-200 rounded-lg">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-gray-900">{paper.title}</h3>
-                          <div className={`text-xs px-2 py-1 rounded-full ${
-                            paper.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                            paper.status === 'revisions_requested' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-blue-100 text-blue-700'
-                          }`}>
-                            {paper.status.replace('_', ' ').toUpperCase()}
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600">{paper.conference} • {paper.submitted}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Deadlines</h2>
-                  <div className="space-y-4">
-                    {[
-                      { conference: "AAAI 2025", deadline: "Jan 15, 2025", daysLeft: 45, type: "Full Paper" },
-                      { conference: "IJCAI 2025", deadline: "Feb 20, 2025", daysLeft: 81, type: "Workshop" },
-                      { conference: "ICML 2025", deadline: "Mar 1, 2025", daysLeft: 90, type: "Short Paper" }
-                    ].map((conf, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-gray-900">{conf.conference}</h3>
-                          <p className="text-sm text-gray-600">{conf.type} • {conf.deadline}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900">{conf.daysLeft} days</div>
-                          <div className="text-xs text-gray-500">remaining</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+          
+         
             
             {/* System Performance Panel */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -1106,4 +967,4 @@ const PLagioGuardDashboard = () => {
   );
 };
 
-export default PLagioGuardDashboard;
+export default AdminDashboard;
