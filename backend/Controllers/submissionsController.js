@@ -56,7 +56,7 @@
       await unlink(req.file.path).catch(()=>{});
 
       const updated = await Submission.findById(submission._id);
-      return res.status(201).json(updated);
+      return res.status(201).json({ success: true, submission: updated,message:"Analysis completed"});
     } catch (err) {
       await Submission.findByIdAndUpdate(submission._id, {
         "report.status": "error",

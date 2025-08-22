@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
-
+import axios from "axios";
 export default function UploadDialog() {
   const [file, setFile] = useState(null);
 
@@ -21,6 +21,14 @@ export default function UploadDialog() {
   const handleUpload = () => {
     if (!file) return;
     console.log("Uploading file:", file);
+    try {
+     const res= axios.post("/api/submissions", { file });
+     if(res.data.success){
+      console.log(res.data.message)
+     }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
     // Add your backend upload logic here
     setFile(null);
   };
