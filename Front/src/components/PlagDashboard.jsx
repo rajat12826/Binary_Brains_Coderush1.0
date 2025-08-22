@@ -50,6 +50,7 @@ import {
 import { UserButton } from '@clerk/clerk-react';
 import ToggleButton from './AnimatedDarkModeToggle';
 import { Link } from 'react-router-dom';
+import BulkUploadDialog from './BulkUploadDialog';
 
 // Mock data for PLagioGuard system
 const mockUsers = {
@@ -1011,10 +1012,7 @@ const PLagioGuardDashboard = () => {
                   <Filter className="w-4 h-4" />
                   <span>Filter</span>
                 </button>
-                <button className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                  <Upload className="w-4 h-4" />
-                  <span>Bulk Upload</span>
-                </button>
+               <BulkUploadDialog/>
               </div>
             </div>
             
