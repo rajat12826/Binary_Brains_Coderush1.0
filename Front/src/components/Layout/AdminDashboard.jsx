@@ -54,6 +54,7 @@ import { UserButton } from '@clerk/clerk-react';
 import ToggleButton from '../AnimatedDarkModeToggle';
 import { Link } from 'react-router-dom';
 import BulkUploadDialog from '../BulkUploadDialog';
+import DetectionDashboard from '../DetectionDashboard';
 // Mock data for PLagioGuard system
 const mockUsers = {
   admin: {
@@ -104,13 +105,30 @@ const DashboardStats = ({ userRole }) => {
 
     if (authorId) fetchTotal();
   }, [authorId]);
+const[adminStats, setAdminStats]= useState([]);
+    useEffect(() => {
+    async function fetchAdminStats() {
+        try {
+            const res = await axios.get("http://localhost:8000/api/submissions/getAdminStats");
+            if (res.data.success) {
+                console.log(res.data.data[0].icon);
+                
+                setAdminStats(res.data.data);
+                // console.log(res.data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch admin stats:", err);
+        }
+    }
+   fetchAdminStats()
 
-  const adminStats = [
-    { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
-    { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
-    { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
-  ];
+}, []);
+//   const adminStats = [
+//     { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
+//     { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
+//     { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
+//     { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
+//   ];
 
 
 
@@ -118,7 +136,7 @@ const DashboardStats = ({ userRole }) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => (
+      {adminStats?.map((stat, index) => (
         <motion.div
           key={index}
           initial={{ opacity: 0, y: 20 }}
@@ -149,7 +167,14 @@ const DashboardStats = ({ userRole }) => {
               stat.color === 'purple' ? 'bg-purple-100 text-purple-600' :
               'bg-yellow-100 text-yellow-600'
             }`}>
-              <stat.icon className="w-6 h-6" />
+            {
+  index === 0 ? <FileText className="w-6 h-6" /> :
+  index === 1 ? <Brain className="w-6 h-6" /> :
+  index === 2 ? <Shield className="w-6 h-6" /> :
+  index === 3 ? <CheckCircle className="w-6 h-6" /> :
+  null
+}
+
             </div>
           </div>
         </motion.div>
@@ -200,100 +225,7 @@ const AIDetectionPanel = () => {
         </div>
       </div>
       
-      <div className="p-6">
-        {activeTab === 'overview' && (
-          <div className="space-y-4">
-            {detectionResults.map((result) => (
-              <div key={result.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{result.title}</h3>
-                  <p className="text-sm text-gray-600">by {result.author} • {result.timestamp}</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="text-right">
-                    <div className="text-sm font-medium">AI Score: {result.aiScore}%</div>
-                    <div className={`text-xs px-2 py-1 rounded-full ${
-                      result.status === 'high_risk' ? 'bg-red-100 text-red-700' :
-                      result.status === 'medium_risk' ? 'bg-yellow-100 text-yellow-700' :
-                      result.status === 'low_risk' ? 'bg-blue-100 text-blue-700' :
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {result.status.replace('_', ' ').toUpperCase()}
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {activeTab === 'entropy' && (
-          <div className="text-center py-8">
-            <Cpu className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Entropy Analysis</h3>
-            <p className="text-gray-600">Advanced entropy-based detection algorithms analyze text randomness patterns to identify AI-generated content.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">2.34</div>
-                <div className="text-sm text-gray-600">Avg Entropy</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">89%</div>
-                <div className="text-sm text-gray-600">Accuracy</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">156ms</div>
-                <div className="text-sm text-gray-600">Avg Process</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'perplexity' && (
-          <div className="text-center py-8">
-            <Brain className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Perplexity Analysis</h3>
-            <p className="text-gray-600">Language model perplexity scores help identify unnaturally predictable text patterns common in AI writing.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">45.7</div>
-                <div className="text-sm text-gray-600">Avg Score</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">92%</div>
-                <div className="text-sm text-gray-600">Detection Rate</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">234ms</div>
-                <div className="text-sm text-gray-600">Avg Process</div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'watermarks' && (
-          <div className="text-center py-8">
-            <Fingerprint className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">AI Watermark Detection</h3>
-            <p className="text-gray-600">Advanced algorithms detect hidden watermarks and signatures left by AI writing tools.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">23</div>
-                <div className="text-sm text-gray-600">Detected</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">97%</div>
-                <div className="text-sm text-gray-600">Precision</div>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <div className="text-xl font-bold text-gray-900">15</div>
-                <div className="text-sm text-gray-600">Models Covered</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      <DetectionDashboard activeTab={activeTab}/>
     </div>
   );
 };
@@ -302,12 +234,30 @@ const AIDetectionPanel = () => {
 const StylemetricPanel = () => {
   const [selectedStudent, setSelectedStudent] = useState(null);
   
-  const studentProfiles = [
-    { id: 1, name: "Alice Johnson", papers: 5, consistency: 94, flagged: false, avgWordLength: 5.2, sentenceComplexity: 8.4 },
-    { id: 2, name: "Bob Smith", papers: 3, consistency: 67, flagged: true, avgWordLength: 4.8, sentenceComplexity: 6.2 },
-    { id: 3, name: "Carol Davis", papers: 7, consistency: 89, flagged: false, avgWordLength: 5.8, sentenceComplexity: 9.1 },
-    { id: 4, name: "David Wilson", papers: 4, consistency: 45, flagged: true, avgWordLength: 6.2, sentenceComplexity: 7.8 }
-  ];
+  const[studentProfiles, setStudentProfiles] = useState([])
+    useEffect(() => {
+       async function getStudentSub() {
+      try {
+      // Upload and get immediate analysis
+      const response = await fetch("http://localhost:8000/api/submissions/studentSub", {
+        method: "GET",
+     
+      });
+      const data = await response.json();
+      setStudentProfiles(data.students)
+   console.log(response);
+   
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+    //   setError(error.message || "An error occurred during processing");
+      
+    } finally {
+      
+    }
+  }
+        getStudentSub();
+    }, []);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -672,6 +622,47 @@ const AdminDashboard = () => {
   const [currentUser, setCurrentUser] = useState('admin');
   const [activeSection, setActiveSection] = useState('dashboard');
   const user = mockUsers[currentUser];
+  async function getAllSub() {
+      try {
+      // Upload and get immediate analysis
+      const response = await fetch("http://localhost:8000/api/submissions/allSub", {
+        method: "GET",
+     
+      });
+
+   console.log(response);
+   
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+    //   setError(error.message || "An error occurred during processing");
+      
+    } finally {
+      
+    }
+  }
+   async function getStudentSub() {
+      try {
+      // Upload and get immediate analysis
+      const response = await fetch("http://localhost:8000/api/submissions/studentSub", {
+        method: "GET",
+     
+      });
+
+   console.log(response);
+   
+
+    } catch (error) {
+      console.error("❌ Error:", error);
+    //   setError(error.message || "An error occurred during processing");
+      
+    } finally {
+      
+    }
+  }
+//   getAllSub();
+getStudentSub()
+console.log();
 
   const renderContent = () => {
     switch (activeSection) {

@@ -911,3 +911,186 @@ export async function listSubmissions(req, res) {
     });
   }
 }
+
+
+
+
+
+export async function getAdminStats(req, res) {
+  try {
+    const days = 30; // current period
+    const now = new Date();
+    const currentStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const previousStart = new Date(now.getTime() - 2 * days * 24 * 60 * 60 * 1000);
+
+    // Helper function to count stats in a given period
+    const getCounts = async (start, end = now) => {
+      const total = await Submission.countDocuments({ createdAt: { $gte: start, $lt: end } });
+      const aiDetected = await Submission.countDocuments({
+        createdAt: { $gte: start, $lt: end },
+        'analysis.assessment.verdict': { $ne: 'HUMAN_WRITTEN' }
+      });
+      const plagiarismCases = await Submission.countDocuments({
+        createdAt: { $gte: start, $lt: end },
+        'analysis.assessment.verdict': { $in: ['SUSPICIOUS', 'LIKELY_AI'] }
+      });
+      const cleanPapers = await Submission.countDocuments({
+        createdAt: { $gte: start, $lt: end },
+        'analysis.assessment.verdict': 'HUMAN_WRITTEN'
+      });
+
+      return { total, aiDetected, plagiarismCases, cleanPapers };
+    };
+
+    const current = await getCounts(currentStart);
+    const previous = await getCounts(previousStart, currentStart);
+
+    // Function to calculate change percentage and trend
+    const calcChange = (currentValue, previousValue) => {
+      if (previousValue === 0) return { change: '+100%', trend: 'up' }; // Avoid division by zero
+      const diff = currentValue - previousValue;
+      const change = ((diff / previousValue) * 100).toFixed(0) + '%';
+      const trend = diff >= 0 ? 'up' : 'down';
+      return { change, trend };
+    };
+
+    const adminStats = [
+      { label: 'Total Submissions', value: current.total, ...calcChange(current.total, previous.total), icon: 'FileText', color: 'blue' },
+      { label: 'AI Detected', value: current.aiDetected, ...calcChange(current.aiDetected, previous.aiDetected), icon: 'Brain', color: 'red' },
+      { label: 'Plagiarism Cases', value: current.plagiarismCases, ...calcChange(current.plagiarismCases, previous.plagiarismCases), icon: 'Shield', color: 'orange' },
+      { label: 'Clean Papers', value: current.cleanPapers, ...calcChange(current.cleanPapers, previous.cleanPapers), icon: 'CheckCircle', color: 'green' }
+    ];
+
+    res.json({
+      success: true,
+      data: adminStats
+    });
+
+  } catch (error) {
+    console.error("Error fetching admin stats:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch admin stats"
+    });
+  }
+}
+
+
+export async function getAllSubmissions(req, res) {
+  try {
+    const limit = 5; // fixed limit
+    const page = parseInt(req.query.page) || 1;
+
+    const submissions = await Submission.find()
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit);
+
+    const total = await Submission.countDocuments();
+
+    const overview = submissions.map(sub => ({
+      id: sub._id,
+      title: sub.title || "Untitled",
+      author: sub.userId || "Unknown",
+      timestamp: sub.createdAt?.toISOString() || new Date().toISOString(),
+      aiScore: Math.round((sub.analysis?.assessment?.aiProbability || 0) * 100),
+      status: (sub.analysis?.assessment?.riskLevel || "low").toLowerCase()
+    }));
+
+    const entropy = submissions.map(sub => ({
+      id: sub._id,
+      avgEntropy: sub.analysis?.metrics?.entropy || 0,
+      accuracy: Math.round((sub.analysis?.assessment?.humanProbability || 0) * 100),
+      avgProcess: sub.analysis?.processingTime || 0
+    }));
+
+    const perplexity = submissions.map(sub => ({
+      id: sub._id,
+      avgScore: sub.analysis?.metrics?.perplexity || 0,
+      detectionRate: Math.round((sub.analysis?.assessment?.humanProbability || 0) * 100),
+      avgProcess: sub.analysis?.processingTime || 0
+    }));
+
+    const watermarks = submissions.map(sub => ({
+      id: sub._id,
+      detected: sub.analysis?.metrics?.watermark?.detected ? 1 : 0,
+      precision: Math.round((sub.analysis?.metrics?.watermark?.confidence || 0) * 100),
+      modelsCovered: 1
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        overview,
+        entropy,
+        perplexity,
+        watermarks
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error("Error listing submissions:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to list submissions"
+    });
+  }
+}
+
+
+
+
+
+
+export async function getStudentProfiles(req, res) {
+  try {
+    const aggregation = await Submission.aggregate([
+      {
+        $group: {
+          _id: "$userId",
+          papers: { $sum: 1 },
+          avgConsistency: { $avg: "$analysis.assessment.humanProbability" },
+          flaggedCount: {
+            $sum: {
+              $cond: [
+                { $ne: ["$analysis.assessment.verdict", "HUMAN_WRITTEN"] },
+                1,
+                0
+              ]
+            }
+          },
+          avgWordLength: { $avg: "$analysis.metrics.stylometry.lexicalDiversity" }, // or another metric if you track actual word length
+          sentenceComplexity: { $avg: "$analysis.metrics.stylometry.avgSentenceLength" }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          papers: 1,
+          consistency: { $round: [{ $multiply: ["$avgConsistency", 100] }, 0] },
+          flagged: { $cond: [{ $gt: ["$flaggedCount", 0] }, true, false] },
+          avgWordLength: { $round: ["$avgWordLength", 1] },
+          sentenceComplexity: { $round: ["$sentenceComplexity", 1] }
+        }
+      },
+      { $sort: { name: 1 } }
+    ]);
+
+    // Add incremental `id` field
+    const studentProfiles = aggregation.map((st, index) => ({ id: index + 1, ...st }));
+
+    res.json({ success: true, students: studentProfiles });
+  } catch (error) {
+    console.error("Error fetching student profiles:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch student profiles" });
+  }
+}
+
+
