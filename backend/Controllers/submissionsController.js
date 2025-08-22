@@ -5,6 +5,7 @@ import pdf from "pdf-to-text";
 import Submission from '../modals/Submission.js';
 import cloudinary from "../config/cloudinary.js";
 import { chatSession } from "../modals/GeminiAIModel.js";
+import mongoose from "mongoose";
 
 /**
  * Core Analysis Engine
@@ -318,14 +319,16 @@ function generateContentHash(text) {
 }
 
 /**
- * Main submission handler (Enhanced with Gemini AI)
+ * Main submission handler (Enhanced with Gemini AI) - FIXED userId handling
  */
 export async function handleSubmissionImmediate(req, res) {
   const startTime = Date.now();
   
   try {
-    const { title = "Untitled Document", description = "", userId = "anonymous" } = req.body;
+    // FIXED: Proper userId extraction and validation
+    const { title = "Untitled Document", description = "", userId } = req.body;
     
+    // Validate required fields
     if (!req.file) {
       return res.status(400).json({ 
         success: false,
@@ -333,7 +336,15 @@ export async function handleSubmissionImmediate(req, res) {
       });
     }
 
-    console.log(`Starting analysis for: ${title}`);
+    // FIXED: Validate userId is provided
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: "Valid userId is required" 
+      });
+    }
+
+    console.log(`Starting analysis for: ${title} (User: ${userId})`);
     
     // Extract text from PDF
     const extractedText = await extractTextFromPDF(req.file.buffer);
@@ -348,10 +359,14 @@ export async function handleSubmissionImmediate(req, res) {
     // Generate unique hash for this content
     const contentHash = generateContentHash(extractedText);
     
-    // Check if this exact content was already analyzed
-    const existingSubmission = await Submission.findOne({ contentHash });
+    // Check if this exact content was already analyzed BY THIS USER
+    const existingSubmission = await Submission.findOne({ 
+      contentHash,
+      userId: userId.trim() // Check for same user
+    });
+    
     if (existingSubmission) {
-      console.log("Found cached analysis, but re-running Gemini for enhanced results");
+      console.log("Found cached analysis for this user, but re-running Gemini for enhanced results");
       
       // If Gemini wasn't run before, run it now for better results
       if (!existingSubmission.analysis?.geminiStatus || existingSubmission.analysis.geminiStatus !== "SUCCESS") {
@@ -585,9 +600,11 @@ export async function handleSubmissionImmediate(req, res) {
       console.warn("File upload failed:", uploadError.message);
     }
 
-    // Save to database
+    // FIXED: Save to database with proper userId handling
+    console.log(`Saving submission for user: ${userId}`);
+    
     const submission = await Submission.create({
-      userId,
+      userId: userId.trim(), // Use the userId from request body, properly trimmed
       title,
       description,
       contentHash,
@@ -595,14 +612,15 @@ export async function handleSubmissionImmediate(req, res) {
       analysis,
       createdAt: new Date()
     });
-
-    console.log(`Analysis completed for ${title} in ${Date.now() - startTime}ms`);
-
+      
+    console.log(`Analysis completed for ${title} (User: ${userId}) in ${Date.now() - startTime}ms`);
+    
     // Enhanced response format with Gemini insights
     res.json({
       success: true,
       message: "Document processed successfully",
       status: "COMPLETED",
+      userId: userId, // Return the userId for confirmation
       submissionId: submission._id,
       geminiStatus: analysis.geminiStatus,
       report: {
@@ -680,13 +698,20 @@ export async function handleSubmissionImmediate(req, res) {
 }
 
 /**
- * Get submission status endpoint
+ * Get submission status endpoint - FIXED with userId validation
  */
 export async function getSubmissionStatus(req, res) {
   try {
     const { id } = req.params;
+    const { userId } = req.query; // Get userId from query params
     
-    const submission = await Submission.findById(id);
+    // Validate userId if provided
+    let query = { _id: id };
+    if (userId) {
+      query.userId = userId.trim();
+    }
+    
+    const submission = await Submission.findOne(query);
     if (!submission) {
       return res.status(404).json({ 
         error: "Submission not found", 
@@ -698,6 +723,7 @@ export async function getSubmissionStatus(req, res) {
       id: submission._id,
       status: "COMPLETED", // Since we process immediately
       title: submission.title,
+      userId: submission.userId,
       submittedAt: submission.createdAt,
       lastUpdated: submission.updatedAt,
       
@@ -732,13 +758,20 @@ export async function getSubmissionStatus(req, res) {
 }
 
 /**
- * Get detailed submission report
+ * Get detailed submission report - FIXED with userId validation
  */
 export async function getSubmissionReport(req, res) {
   try {
     const { id } = req.params;
+    const { userId } = req.query; // Get userId from query params
     
-    const submission = await Submission.findById(id);
+    // Validate userId if provided
+    let query = { _id: id };
+    if (userId) {
+      query.userId = userId.trim();
+    }
+    
+    const submission = await Submission.findOne(query);
     if (!submission) {
       return res.status(404).json({ 
         error: "Submission not found", 
@@ -757,6 +790,7 @@ export async function getSubmissionReport(req, res) {
         id: submission._id,
         title: submission.title,
         description: submission.description,
+        userId: submission.userId,
         processedAt: submission.createdAt,
         processingTime: `${Math.round((submission.analysis?.processingTime || 0)/1000)}s`,
         geminiEnabled: submission.analysis?.geminiStatus === "SUCCESS"
@@ -830,25 +864,32 @@ export async function getSubmissionReport(req, res) {
 }
 
 /**
- * List recent submissions
+ * List recent submissions - FIXED with userId filtering
  */
 export async function listSubmissions(req, res) {
   try {
-    const { limit = 10, page = 1 } = req.query;
+    const { limit = 10, page = 1, userId } = req.query;
     
-    const submissions = await Submission.find()
-      .select('title analysis.assessment.verdict analysis.assessment.riskLevel analysis.geminiStatus createdAt')
+    // Build query with optional userId filter
+    let query = {};
+    if (userId && userId.trim().length > 0) {
+      query.userId = userId.trim();
+    }
+    
+    const submissions = await Submission.find(query)
+      .select('title userId analysis.assessment.verdict analysis.assessment.riskLevel analysis.geminiStatus createdAt')
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
-    const total = await Submission.countDocuments();
+    const total = await Submission.countDocuments(query);
 
     res.json({
       success: true,
       submissions: submissions.map(sub => ({
         id: sub._id,
         title: sub.title,
+        userId: sub.userId,
         verdict: sub.analysis.assessment.verdict,
         riskLevel: sub.analysis.assessment.riskLevel,
         analyzedAt: sub.createdAt,

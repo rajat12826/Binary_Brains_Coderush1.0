@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, X, CheckCircle, AlertCircle, Clock, FileText, TrendingUp, Shield, Lightbulb } from "lucide-react";
-
+import{useUser}from '@clerk/clerk-react'
 export default function UploadDialog() {
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -18,7 +18,9 @@ export default function UploadDialog() {
   const [submissionId, setSubmissionId] = useState(null);
   const [report, setReport] = useState(null);
   const [error, setError] = useState(null);
-
+const{user}=useUser()
+const userId=user?.id
+  console.log(userId);
   const handleFileChange = (e) => {
     setFile(e.target.files[0] || null);
     // Reset states when new file is selected
@@ -38,7 +40,7 @@ export default function UploadDialog() {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("userId", "test-user-123");
+    formData.append("userId", userId);
     formData.append("title", file.name.replace(/\.[^/.]+$/, "")); // Remove file extension
     formData.append("description", "Uploaded via web interface");
 
@@ -88,7 +90,7 @@ export default function UploadDialog() {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         setUploadProgress(`Checking status... (${attempt + 1}/${maxAttempts})`);
-        
+       
         // Get the report directly (since we process immediately)
         const reportResponse = await fetch(
           `http://localhost:8000/api/submissions/${submissionId}/report`

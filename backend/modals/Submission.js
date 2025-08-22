@@ -3,6 +3,11 @@ import mongoose from 'mongoose';
 
 const submissionSchema = new mongoose.Schema({
   // Basic info
+  userId:{
+type: String,
+    required: true,
+    
+  },
   title: {
     type: String,
     required: true,
