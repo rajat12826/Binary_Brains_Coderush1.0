@@ -1,16 +1,15 @@
+// AdminLoginPage.jsx
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Mail, Lock, Eye, EyeOff, Loader2, Shield, ArrowLeft } from "lucide-react";
 import Navbar from "./Navbar";
-import { useNavigate } from "react-router-dom"; // ✅ import useNavigate
+import { useNavigate } from "react-router-dom";
 
-export default function CMTAdminLoginPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+export default function AdminLoginPage() {
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -20,72 +19,58 @@ export default function CMTAdminLoginPage() {
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {
-      alert("Please enter email and password");
+      setError("Please enter email and password");
       return;
     }
 
     setLoading(true);
+    setError("");
+
     try {
-      const res = await fetch("http://localhost:8000/api/user/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-        credentials: "include", // ✅ important for sessions
-      });
+      const { data } = await axios.post(
+        "http://localhost:8000/api/user/adminlogin",
+        formData
+      );
+console.log(data);
 
-      const data = await res.json();
-
-      if (res.ok) {
-        // ✅ Ensure only admins can login
-        if (data.user?.role !== "admin") {
-          alert("Access denied: Admins only!");
-          return;
-        }
-
-        // Save session/JWT info if backend sends it
-        localStorage.setItem("user", JSON.stringify(data.user));
-
-        // ✅ Redirect to dashboard and prevent back navigation
-        navigate("/admin/dashboard", { replace: true });
-      } else {
-        alert(data.message || "Login failed");
+      // ✅ Ensure only admins can login (match backend role exactly)
+      if (!data.success ) {
+        setError("Access denied: Admins only!");
+        return;
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Something went wrong. Try again.");
+
+      // Save session/JWT info
+      localStorage.setItem("user", JSON.stringify(data.data.user));
+      localStorage.setItem("token", data.token);
+
+      // Redirect to dashboard
+      navigate("/admin/dashboard", { replace: true });
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Prevent logged-in admin from seeing login page again
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user?.role === "admin") {
-      navigate("/admin/dashboard", { replace: true });
-    }
-  }, [navigate]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-black flex items-center justify-center p-4">
       <Navbar />
       <div className="w-full max-w-md my-20">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
             <Shield className="w-8 h-8 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Admin Login
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Secure access for administrators
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Admin Login</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Secure access for administrators</p>
         </div>
 
-        {/* Card */}
         <div className="bg-white dark:bg-gray-800 shadow-xl border-0 rounded-3xl overflow-hidden p-8">
           <div className="space-y-6">
+            {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+
             {/* Email */}
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -149,12 +134,12 @@ export default function CMTAdminLoginPage() {
             </button>
 
             {/* Back */}
-            <a
-              href="/"
+            <button
+              onClick={() => navigate("/")}
               className="flex items-center justify-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
             >
               <ArrowLeft className="mr-1 w-4 h-4" /> Back to Home
-            </a>
+            </button>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ import PLagioGuardDashboard from "./components/PlagDashboard";
 import Signup from "./components/SignUp";
 import LoginPage from "./components/Login";
 import AdminDashboard from "./components/Layout/AdminDashboard";
+import AdminLoginPage from "./components/AdminLogin";
 
 const App = () => {
   return (
@@ -20,7 +21,8 @@ const App = () => {
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/sign-up" element={<SignUpPage />} />
       <Route path="/about-us" element={<AboutPage />} />
-      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/adminlogin" element={<AdminLoginPage />} />
       <Route path="/features" element={<FeaturesPage />} />
       <Route path="/" element={<AcadeMateLanding />} />
 
