@@ -4,12 +4,9 @@
 import React, { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes'; // Import useTheme from next-themes
 
-interface AnimatedDarkModeToggleProps {
-  size?: number;
-  className?: string;
-}
 
-const ToggleButton: React.FC<AnimatedDarkModeToggleProps> = ({
+
+const ToggleButton = ({
   size = 24,
   className = ""
 }) => {
