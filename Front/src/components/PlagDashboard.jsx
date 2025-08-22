@@ -162,12 +162,44 @@ useEffect(() => {
     { label: 'Average Score', value: '7.8', change: '+0.2', trend: 'up', icon: Award, color: 'purple' }
   ];
 
-  const authorStats = [
-    { label: 'Submissions', value: total, change: '+1', trend: 'up', icon: FileText, color: 'blue' },
-    { label: 'Under Review', value: '2', change: '0', trend: 'neutral', icon: Clock, color: 'yellow' },
-    { label: 'Accepted', value: '1', change: '+1', trend: 'up', icon: CheckCircle, color: 'green' },
-    { label: 'Avg Review Score', value: '8.2', change: '+0.5', trend: 'up', icon: Award, color: 'purple' }
-  ];
+  const [authorStats, setAuthorStats] = useState([]);
+
+  useEffect(() => {
+  fetch(`http://localhost:8000/api/submissions?userId=${userId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const submissions = data.submissions || [];
+
+      const total = submissions.length;
+      const underReview = submissions.filter(s => s.verdict === "UNDER_REVIEW").length;
+      const accepted = submissions.filter(s => s.verdict === "ACCEPTED").length;
+      const avgScore =
+        submissions.length > 0
+          ? (
+              submissions.reduce((sum, s) => sum + (s.analysis?.score || 0), 0) /
+              submissions.length
+            ).toFixed(1)
+          : 0;
+
+      // Compute trends (compared to previous data if you have it)
+      const computeTrend = (current, previous) => {
+        if (previous == null) return "neutral";
+        return current > previous ? "up" : current < previous ? "down" : "neutral";
+      };
+
+      // Example previous stats could come from state or a separate API
+      const previousStats = { total: 0, underReview: 0, accepted: 0, avgScore: 0 };
+
+      setAuthorStats([
+        { label: "Submissions", value: total, change: total - previousStats.total, trend: computeTrend(total, previousStats.total), icon: FileText, color: "blue" },
+        { label: "Under Review", value: underReview, change: underReview - previousStats.underReview, trend: computeTrend(underReview, previousStats.underReview), icon: Clock, color: "yellow" },
+        { label: "Accepted", value: accepted, change: accepted - previousStats.accepted, trend: computeTrend(accepted, previousStats.accepted), icon: CheckCircle, color: "green" },
+        { label: "Avg Review Score", value: avgScore, change: (avgScore - previousStats.avgScore).toFixed(1), trend: computeTrend(avgScore, previousStats.avgScore), icon: Award, color: "purple" }
+      ]);
+    })
+    .catch(err => console.error("Failed to fetch author stats:", err));
+}, [userId]);
+
 
   const stats =  userRole === 'reviewer' ? reviewerStats : authorStats;
 
