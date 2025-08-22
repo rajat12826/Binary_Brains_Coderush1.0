@@ -11,6 +11,7 @@ import { existsSync, mkdirSync } from "fs";
 // import pinoHttp from "pino-http";
 // import "express-async-errors";
 import submissionsRouter from "./routes/submissions.js";
+import authorRoutes from "./Controllers/authorRoutes.js";
 
 import { initCloudinary } from "./config/cloudinary.js";
 import User from './routes/User.js'
@@ -53,6 +54,8 @@ initCloudinary();
 app.get("/", (_req,res)=>res.send("Backend running"));
 app.use("/api/submissions", submissionsRouter);
 app.use("/api/user", User);
+app.use("/api/submissions", authorRoutes);
+
 
 app.use((err, req, res, next) => {
   req.log?.error(err);

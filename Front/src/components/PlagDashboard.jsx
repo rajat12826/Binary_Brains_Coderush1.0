@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from "@clerk/clerk-react";
+import axios from "axios";
+
 import {
   Bell,
   Search,
@@ -114,8 +117,28 @@ const navigationItems = {
 
 // Dashboard Statistics Component
 const DashboardStats = ({ userRole }) => {
+
+  const { user } = useUser();
+  const authorId = user?.id; 
+
+  const [total, setTotal] = useState(0);
+
+   useEffect(() => {
+    console.log(user);
+    async function fetchTotal() {
+      try {
+        const res = await axios.get(`/api/submissions/total/${authorId}`);
+        setTotal(res.data.total);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    if (authorId) fetchTotal();
+  }, [authorId]);
+
   const adminStats = [
-    { label: 'Total Submissions', value: '1,247', change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
+    { label: 'Total Submissions', value: total, change: '+12%', trend: 'up', icon: FileText, color: 'blue' },
     { label: 'AI Detected', value: '89', change: '+23%', trend: 'up', icon: Brain, color: 'red' },
     { label: 'Plagiarism Cases', value: '156', change: '-8%', trend: 'down', icon: Shield, color: 'orange' },
     { label: 'Clean Papers', value: '1,002', change: '+15%', trend: 'up', icon: CheckCircle, color: 'green' }
