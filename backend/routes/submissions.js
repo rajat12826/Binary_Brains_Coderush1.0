@@ -303,8 +303,10 @@ submissionsRouter.get('/download/:id', async (req, res) => {
 );
 
 submissionsRouter.get("/assigned/:userId", async (req, res) => {
+  console.log(req.params.userId)
   try {
-    const submissions = await Submission.find({ Appointed: req.params.userId })
+   const submissions = await Submission.find({ "analysis.Appointed": req.params.userId })
+
       .sort({ createdAt: -1 });
     res.json({ submissions });
   } catch (err) {
@@ -313,7 +315,7 @@ submissionsRouter.get("/assigned/:userId", async (req, res) => {
   }
 });
 // PUT /api/submissions/:id/review
-submissionsRouter.put("/:id/review", async (req, res) => {
+submissionsRouter.put("/review/:id", async (req, res) => {
   try {
     const { reviewStatus } = req.body;
     if (!["APPROVED", "REJECTED"].includes(reviewStatus)) {
@@ -360,7 +362,8 @@ if (!submission.analysis) {
 }
 
 await submission.save();
-res.json({ success: true, submission });
+console.log(submission.analysis.Appointed);
+res.json({ success: true,submissions: submission.analysis.Appointed });
 
   } catch (err) {
     console.error(err);

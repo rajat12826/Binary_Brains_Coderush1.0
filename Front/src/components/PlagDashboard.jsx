@@ -159,19 +159,19 @@ useEffect(() => {
   // ];
  const [assignedpaper, setAssignedpaper] = useState(0);
  const [completedReviews, setCompletedReviews] = useState(0);
-  useEffect(() => {
-    const reviewStatsFetch = async () => {
-      try {
-        const res = await axios.get(`http://localhost:8000/api/submissions/userAppointedToWhat/${userId}`);
-        setAssignedpaper(res.data.submissions.length)
-        setCompletedReviews((res.data.total.filter((submission) => submission.reviewStatus != 'PENDING')).length);
-      } catch (err) {
-        console.error(err);
-      }
-    }
+  // useEffect(() => {
+  //   const reviewStatsFetch = async () => {
+  //     try {
+  //       const res = await axios.get(`http://localhost:8000/api/submissions/userAppointedToWhat/${userId}`);
+  //       setAssignedpaper(res.data.submissions.length)
+  //       setCompletedReviews((res.data.total.filter((submission) => submission.reviewStatus != 'PENDING')).length);
+  //     } catch (err) {
+  //       console.error(err);
+  //     }
+  //   }
 
-    reviewStatsFetch();
-  },[])
+  //   reviewStatsFetch();
+  // },[])
   const reviewerStats = [
     { label: 'Assigned Papers', value: assignedpaper, icon: FileText, color: 'blue' },
     { label: 'Completed Reviews', value: completedReviews, icon: CheckCircle, color: 'green' },

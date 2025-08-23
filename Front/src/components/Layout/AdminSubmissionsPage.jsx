@@ -38,10 +38,13 @@ export default function AdminSubmissionsPage() {
   const handleAssignReviewer = async (submissionId, userId) => {
     console.log(submissionId, userId);
     try {
-      await axios.put(
+      const res = await axios.put(
         `http://localhost:8000/api/submissions/${submissionId}/assign`,
         { userId }
       );
+      if(res.data.success){
+        console.log(res.data.submissions);
+      }
 
       // Update local state
       setSubmissions(prev =>
@@ -126,9 +129,11 @@ export default function AdminSubmissionsPage() {
                         onChange={e => handleAssignReviewer(sub.id, e.target.value)}
                       >
                         <option value="">Assign Reviewer</option>
-                        {users.map(user => (
-                          <option key={user.id} value={user.id}>{user.name}</option>
-                        ))}
+                        {users.map(user => {
+                          console.log(user);
+                          
+                          return <option key={user._id} value={user._id}>{user.name}</option>
+            })}
                       </select>
                     )}
                   </td>

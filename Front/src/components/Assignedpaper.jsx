@@ -9,12 +9,16 @@ const AssignedPapersPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log(user);
+    
     if (!user?.id) return;
     const fetchAssigned = async () => {
       try {
         setLoading(true);
+
         const response = await axios.get(`http://localhost:8000/api/submissions/assigned/${user.id}`);
         setSubmissions(response.data.submissions || []);
+        console.log(response.data.submissions);
       } catch (error) {
         console.error("Error fetching assigned submissions:", error);
       } finally {
@@ -26,7 +30,7 @@ const AssignedPapersPage = () => {
 
   const updateReviewStatus = async (id, status) => {
     try {
-      await axios.patch(`http://localhost:8000/api/submissions/review/${id}`, { reviewStatus: status });
+      await axios.put(`http://localhost:8000/api/submissions/review/${id}`, { reviewStatus: status });
       setSubmissions((prev) =>
         prev.map((s) =>
           s._id === id ? { ...s, analysis: { ...s.analysis, reviewStatus: status } } : s
@@ -51,12 +55,13 @@ const AssignedPapersPage = () => {
               <th className="px-6 py-3">AI Probability</th>
               <th className="px-6 py-3">Risk</th>
               <th className="px-6 py-3">Review Status</th>
-              <th className="px-6 py-3">Actions</th>
+              <th className="px-6 py-3">Action</th>
+              <th className="px-6 py-3">Download</th>
             </tr>
           </thead>
           <tbody>
             {submissions.map((s) => (
-              <tr key={s._id} className="hover:bg-gray-50">
+              <tr key={s._id} className="hover:bg-gray-50 text-center">
                 <td className="px-6 py-4">{s.title}</td>
                 <td className="px-6 py-4">{s.analysis?.assessment?.verdict}</td>
                 <td className="px-6 py-4">
@@ -64,29 +69,46 @@ const AssignedPapersPage = () => {
                 </td>
                 <td className="px-6 py-4">{s.analysis?.assessment?.riskLevel}</td>
                 <td className="px-6 py-4">{s.analysis?.reviewStatus}</td>
-                <td className="px-6 py-4 space-x-2">
-                  <button
-                    className="px-3 py-1 bg-green-100 text-green-800 rounded"
-                    onClick={() => updateReviewStatus(s._id, "APPROVED")}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-red-100 text-red-800 rounded"
-                    onClick={() => updateReviewStatus(s._id, "REJECTED")}
-                  >
-                    Reject
-                  </button>
+                
+                
+                 {
+                  s.analysis?.reviewStatus === "PENDING" ?(
+                    <div className="flex space-x-2 justify-center">
+                      <button
+                        className="text-green-500 hover:text-green-700"
+                        onClick={() => updateReviewStatus(s._id, "accepted")}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => updateReviewStatus(s._id, "rejected")}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ):<div className="text-green-500 font-semibold align-center">Already Reviewed</div>
+                 } 
+                
+                <td>
+                    <a
+      href={`http://localhost:8000/api/submissions/download/${s._id}`}
+      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Download
+    </a>
                 </td>
               </tr>
             ))}
-            {submissions.length === 0 && (
+            {/* {submissions.length === 0 && (
               <tr>
                 <td colSpan="6" className="text-center py-6 text-gray-500">
                   No assigned submissions.
                 </td>
               </tr>
-            )}
+            )} */}
           </tbody>
         </table>
       </div>
