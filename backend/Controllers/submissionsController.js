@@ -1796,3 +1796,76 @@ export const getUserSubmissions = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const getAssignedSubmissions = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { 
+      page = 1, 
+      limit = 10, 
+      status, 
+      verdict, 
+      riskLevel,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build filter for assigned submissions
+    const filter = { 'analysis.Appointed': userId };
+    
+    // Apply additional filters if provided
+    if (status) filter['analysis.reviewStatus'] = status;
+    if (verdict) filter['analysis.assessment.verdict'] = verdict;
+    if (riskLevel) filter['analysis.assessment.riskLevel'] = riskLevel;
+
+    // Build sort object
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Execute queries in parallel
+    const [submissions, totalCount] = await Promise.all([
+      Submission.find(filter)
+        .select('userId title description analysis createdAt updatedAt fileUrl')
+        .sort(sort)
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(), // Use lean() for better performance
+      Submission.countDocuments(filter)
+    ]);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+
+    // Format response with additional computed fields
+    const formattedSubmissions = submissions.map(submission => ({
+      ...submission,
+      riskDescription: getRiskDescription(submission.analysis?.assessment?.riskLevel),
+      daysSinceSubmission: Math.floor((new Date() - new Date(submission.createdAt)) / (1000 * 60 * 60 * 24))
+    }));
+
+    res.json({
+      submissions: formattedSubmissions,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalCount,
+        hasNext: parseInt(page) < totalPages,
+        hasPrev: parseInt(page) > 1,
+        limit: parseInt(limit)
+      },
+      summary: {
+        total: totalCount,
+        pending: await Submission.countDocuments({ ...filter, 'analysis.reviewStatus': 'PENDING' }),
+        approved: await Submission.countDocuments({ ...filter, 'analysis.reviewStatus': 'APPROVED' }),
+        rejected: await Submission.countDocuments({ ...filter, 'analysis.reviewStatus': 'REJECTED' })
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching assigned submissions:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+};

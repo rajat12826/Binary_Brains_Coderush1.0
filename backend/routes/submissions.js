@@ -10,7 +10,8 @@ import {
   getAllSubmissions,
   getStudentProfiles,
   getAdminStats,
-  getSubmissions
+  getSubmissions,
+  getAssignedSubmissions
 } from "../Controllers/submissionsController.js";
 import Submission from "../modals/Submission.js";
 
@@ -302,18 +303,7 @@ submissionsRouter.get('/download/:id', async (req, res) => {
 }
 );
 
-submissionsRouter.get("/assigned/:userId", async (req, res) => {
-  console.log(req.params.userId)
-  try {
-   const submissions = await Submission.find({ "analysis.Appointed": req.params.userId })
-
-      .sort({ createdAt: -1 });
-    res.json({ submissions });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch assigned submissions" });
-  }
-});
+submissionsRouter.get("/assigned/:userId", getAssignedSubmissions);
 // PUT /api/submissions/:id/review
 submissionsRouter.put("/review/:id", async (req, res) => {
   try {
