@@ -338,4 +338,36 @@ submissionsRouter.put("/:id/review", async (req, res) => {
 });
 
 
+submissionsRouter.put("/:id/assign", async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+  console.log(userId);
+  console.log(id);
+
+  try {
+    const submission = await Submission.findById(id);
+if (!submission) return res.status(404).json({ error: "Submission not found" });
+
+// Ensure analysis object exists
+if (!submission.analysis) {
+  submission.analysis = {
+    Appointed: userId,
+    reviewStatus: "PENDING"
+  };
+} else {
+  submission.analysis.Appointed = userId;
+  submission.analysis.reviewStatus = submission.analysis.reviewStatus || "PENDING";
+}
+
+await submission.save();
+res.json({ success: true, submission });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+
 export default submissionsRouter;

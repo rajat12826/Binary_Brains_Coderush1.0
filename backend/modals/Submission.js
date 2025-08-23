@@ -100,7 +100,7 @@ type: String,
         required: true
       }
     },
-    Appointed:{type:mongoose.Schema.Types.ObjectId,ref:"User",default:null},
+    Appointed:{type:String,default:null},
     reviewStatus:{type:String,default:"PENDING",enum:["PENDING","APPROVED","REJECTED"]},
 
     

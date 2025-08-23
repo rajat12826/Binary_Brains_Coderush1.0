@@ -1,11 +1,10 @@
-
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../modals/User.js";
 import { adminLogin } from "../Controllers/user.controller.js";
 import { getAllUsersAnalytics, getUserAnalytics, getUserSubmissions } from "../Controllers/submissionsController.js";
-
+import { users } from "@clerk/clerk-sdk-node";
 const router = express.Router();
 
 
@@ -22,6 +21,24 @@ router.get('/:userId/submissions', getUserSubmissions);
 // GET /api/analytics/overview?period=30
 router.get('/overview', getAllUsersAnalytics);
 
+router.get("/", async (req, res) => {
+  try {
+    // List users from Clerk
+    const allUsers = await users.getUserList({ limit: 100 }); // adjust limit as needed
+
+    // Map to minimal info you want
+    const result = allUsers.map(u => ({
+      _id: u.id,
+      name: u.firstName + " " + (u.lastName || ""),
+      email: u.emailAddresses[0]?.emailAddress || ""
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
 
 
 export default router;

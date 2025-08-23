@@ -15,6 +15,12 @@ import submissionsRouter from "./routes/submissions.js";
 import authorRoutes from "./Controllers/authorRoutes.js";
 import User from './routes/User.js';
 import { initCloudinary } from "./config/cloudinary.js";
+import { Clerk } from "@clerk/backend";
+
+const clerk = new Clerk({
+  apiKey: process.env.CLERK_API_KEY,
+});
+
 
 // const logger = pino({ level: process.env.LOG_LEVEL || "info" });
 
