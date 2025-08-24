@@ -1,0 +1,6 @@
+# Tell all search engines that they are allowed to crawl the entire site
+User-agent: *
+Allow: /
+
+# Specify the location of your sitemap
+Sitemap: https://plagio-guard.vercel.app/sitemap.xml
