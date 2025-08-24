@@ -16,7 +16,7 @@ const AssignedPapersPage = () => {
       try {
         setLoading(true);
 
-        const response = await axios.get(`http://localhost:8000/api/submissions/assigned/${user.id}`);
+        const response = await axios.get(import.meta.env.VITE_BACKEND_URL+`api/submissions/assigned/${user.id}`);
         setSubmissions(response.data.submissions || []);
         console.log(response.data.submissions);
       } catch (error) {
@@ -30,7 +30,7 @@ const AssignedPapersPage = () => {
 
   const updateReviewStatus = async (id, status) => {
     try {
-      await axios.put(`http://localhost:8000/api/submissions/review/${id}`, { reviewStatus: status });
+      await axios.put(import.meta.env.VITE_BACKEND_URL+`api/submissions/review/${id}`, { reviewStatus: status });
       setSubmissions((prev) =>
         prev.map((s) =>
           s._id === id ? { ...s, analysis: { ...s.analysis, reviewStatus: status } } : s
@@ -92,7 +92,7 @@ const AssignedPapersPage = () => {
                 
                 <td>
                     <a
-      href={`http://localhost:8000/api/submissions/download/${s._id}`}
+      href={import.meta.env.VITE_BACKEND_URL+`api/submissions/download/${s._id}`}
       className="px-3 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200"
       target="_blank"
       rel="noopener noreferrer"

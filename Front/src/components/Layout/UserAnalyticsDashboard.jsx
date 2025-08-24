@@ -10,7 +10,7 @@ import { useUser } from '@clerk/clerk-react';
 
 // API service functions
 const apiService = {
-  baseURL: 'http://localhost:8000/api/user',
+  baseURL: import.meta.env.VITE_BACKEND_URL+'api/user',
   
   async getUserAnalytics(userId, period = 30) {
     const response = await fetch(`${this.baseURL}/${userId}?period=${period}`);

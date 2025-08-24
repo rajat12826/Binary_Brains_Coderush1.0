@@ -121,9 +121,9 @@ const [ptotal, setPtotal] = useState(0);
     async function fetchTotal() {
       
       try {
-        const res = await axios.get(`http://localhost:8000/api/submissions/total/${userId}`);
-        const res1 = await axios.get(`http://localhost:8000/api/submissions/aitotal/${userId}`);
-        const res2 = await axios.get(`http://localhost:8000/api/submissions/ptotal/${userId}`);
+        const res = await axios.get(import.meta.env.VITE_BACKEND_URL+`api/submissions/total/${userId}`);
+        const res1 = await axios.get(import.meta.env.VITE_BACKEND_URL+`api/submissions/aitotal/${userId}`);
+        const res2 = await axios.get(import.meta.env.VITE_BACKEND_URL+`/api/submissions/ptotal/${userId}`);
         console.log(res.data.total);
         setTotal(res.data.total);
         setAitotal(res1.data.aitotal);
@@ -141,7 +141,7 @@ const [ptotal, setPtotal] = useState(0);
 useEffect(() => {
     async function fetchCleanCount() {
       try {
-        const res = await axios.get(`http://localhost:8000/api/submissions/clean/${userId}`);
+        const res = await axios.get(import.meta.env.VITE_BACKEND_URL+`api/submissions/clean/${userId}`);
         setCleanPapers(res.data.cleanCount);
       } catch (err) {
         console.error(err);
@@ -182,7 +182,7 @@ useEffect(() => {
   const [authorStats, setAuthorStats] = useState([]);
  
   useEffect(() => {
-  fetch(`http://localhost:8000/api/submissions?userId=${userId}`)
+  fetch(import.meta.env.VITE_BACKEND_URL+`api/submissions?userId=${userId}`)
     .then((res) => res.json())
     .then((data) => {
       const submissions = data.submissions || [];

@@ -18,11 +18,11 @@ export default function AdminSubmissionsPage() {
     setLoading(true);
     try {
       // Fetch submissions
-      const subRes = await axios.get("http://localhost:8000/api/submissions");
+      const subRes = await axios.get(import.meta.env.VITE_BACKEND_URL+"api/submissions");
       setSubmissions(subRes.data.submissions || []);
       console.log(subRes.data.submissions);
       // Fetch users (for reviewer assignment)
-      const usersRes = await axios.get("http://localhost:8000/api/user");
+      const usersRes = await axios.get(import.meta.env.VITE_BACKEND_URL+"api/user");
       setUsers(usersRes.data || []);
       console.log(usersRes.data); 
 
@@ -39,7 +39,7 @@ export default function AdminSubmissionsPage() {
     console.log(submissionId, userId);
     try {
       const res = await axios.put(
-        `http://localhost:8000/api/submissions/${submissionId}/assign`,
+        import.meta.env.VITE_BACKEND_URL+`api/submissions/${submissionId}/assign`,
         { userId }
       );
       if(res.data.success){

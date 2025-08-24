@@ -97,7 +97,7 @@ const DashboardStats = ({ userRole }) => {
     console.log(user);
     async function fetchTotal() {
       try {
-        const res = await axios.get(`/api/submissions/total/${authorId}`);
+        const res = await axios.get(`api/submissions/total/${authorId}`);
         setTotal(res.data.total);
       } catch (err) {
         console.error(err);
@@ -110,7 +110,7 @@ const[adminStats, setAdminStats]= useState([]);
     useEffect(() => {
     async function fetchAdminStats() {
         try {
-            const res = await axios.get("http://localhost:8000/api/submissions/getAdminStats");
+            const res = await axios.get(import.meta.env.VITE_BACKEND_URL+"api/submissions/getAdminStats");
             if (res.data.success) {
                 console.log(res.data.data[0].icon);
                 
@@ -240,7 +240,7 @@ const StylemetricPanel = () => {
        async function getStudentSub() {
       try {
       // Upload and get immediate analysis
-      const response = await fetch("http://localhost:8000/api/submissions/studentSub", {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+"api/submissions/studentSub", {
         method: "GET",
      
       });
@@ -631,7 +631,7 @@ const AdminDashboard = () => {
  async function getAllSub() {
       try {
       // Upload and get immediate analysis
-      const response = await fetch("http://localhost:8000/api/submissions/allSubmissions", {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+"api/submissions/allSubmissions", {
         method: "GET",
      
       });
@@ -656,7 +656,7 @@ const data=await response.json()
    async function getStudentSub() {
       try {
       // Upload and get immediate analysis
-      const response = await fetch("http://localhost:8000/api/submissions/studentSub", {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+"api/submissions/studentSub", {
         method: "GET",
      
       });

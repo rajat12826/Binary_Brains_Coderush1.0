@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:8000/api/user/adminlogin",
+        import.meta.env.VITE_BACKEND_URL+"api/user/adminlogin",
         formData
       );
 console.log(data);

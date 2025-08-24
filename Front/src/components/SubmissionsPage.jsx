@@ -18,7 +18,7 @@ console.log(user?.id,"Sss");
     const fetchSubmissions = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:8000/api/submissions/user/${user.id}`);
+        const response = await axios.get(import.meta.env.VITE_BACKEND_URL+`api/submissions/user/${user.id}`);
         console.log("yeeeee")
         console.log(response.data.submissions);
         setSubmissions(response.data.submissions || []);
@@ -115,7 +115,7 @@ console.log(user?.id,"Sss");
 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
   {submission.fileUrl ? (
     <a
-      href={`http://localhost:8000/api/submissions/download/${submission._id}`}
+      href={import.meta.env.VITE_BACKEND_URL+`api/submissions/download/${submission._id}`}
       className="px-3 py-1 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200"
       target="_blank"
       rel="noopener noreferrer"

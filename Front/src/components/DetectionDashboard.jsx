@@ -14,7 +14,7 @@ export default function DetectionDashboard({ activeTab }) {
   useEffect(() => {
     async function fetchSubmissions() {
       try {
-        const res = await axios.get("http://localhost:8000/api/submissions/allSub"); // Your backend route
+        const res = await axios.get("api/submissions/allSub"); // Your backend route
         if (res.data.success) {
           setDetectionData(res.data.data);
         }
