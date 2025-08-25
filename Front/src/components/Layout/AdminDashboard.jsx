@@ -703,11 +703,11 @@ console.log();
          
             
             {/* System Performance Panel */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold text-gray-900">System Performance</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-50">System Performance</h2>
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-100">
                     <Activity className="w-4 h-4" />
                     <span>Real-time monitoring</span>
                   </div>
@@ -743,11 +743,11 @@ console.log();
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-900">87%</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">87%</span>
                     </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">AI Detection</div>
-                  <div className="text-xs text-gray-500">Accuracy Rate</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">AI Detection</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-100">Accuracy Rate</div>
                 </div>
                 
                 <div className="text-center">
@@ -775,11 +775,11 @@ console.log();
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-900">94%</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">94%</span>
                     </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">Plagiarism</div>
-                  <div className="text-xs text-gray-500">Detection Rate</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">Plagiarism</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-100">Detection Rate</div>
                 </div>
                 
                 <div className="text-center">
@@ -807,11 +807,11 @@ console.log();
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-900">76%</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">76%</span>
                     </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">System Load</div>
-                  <div className="text-xs text-gray-500">Current Usage</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">System Load</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-100">Current Usage</div>
                 </div>
                 
                 <div className="text-center">
@@ -839,11 +839,11 @@ console.log();
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-gray-900">98%</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">98%</span>
                     </div>
                   </div>
                   <div className="text-sm font-medium text-gray-900">Uptime</div>
-                  <div className="text-xs text-gray-500">Last 30 Days</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-100">Last 30 Days</div>
                 </div>
               </div>
             </div>
