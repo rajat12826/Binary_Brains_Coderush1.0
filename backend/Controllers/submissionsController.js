@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import User from "../modals/User.js";
+import { extractTextFromPDFSimple } from "../utils/pdfExtractor.js";
 dotenv.config();
 // Add this email utility function at the top of your file, after imports
 async function sendNotificationEmail(data) {
@@ -539,7 +540,7 @@ export async function handleSubmissionImmediate(req, res) {
     // Extract text from PDF with enhanced error handling
     let extractedText;
     try {
-      extractedText = await extractTextFromPDF(req.file.buffer);
+      extractedText = await extractTextFromPDFSimple(req.file.buffer);
       console.log("Text extraction successful, length:", extractedText.length);
     } catch (extractionError) {
       console.error("PDF text extraction failed:", extractionError);
