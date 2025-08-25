@@ -93,7 +93,7 @@ const userId=user?.id
        
         // Get the report directly (since we process immediately)
         const reportResponse = await fetch(
-          import.meta.env.VITE_BACKEND_URL+`/api/submissions/${submissionId}/report`
+          import.meta.env.VITE_BACKEND_URL+`api/submissions/${submissionId}/report`
         );
         
         if (reportResponse.ok) {
